@@ -30,3 +30,7 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+api/venv/
+api/__pycache__/
+
+

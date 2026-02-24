@@ -35,8 +35,8 @@ export function useChatService(
         console.warn('⚠️ 沒有找到歷史對話，將使用空陣列')
       }
       //deploy
-      const response = await fetch(`/api/test`, {
-        // const response = await fetch(`http://localhost:5000/api/test`, {
+      // const response = await fetch(`/api/chat`, {
+      const response = await fetch(`http://localhost:5000/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -50,8 +50,9 @@ export function useChatService(
       if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`)
 
       const data = await response.json()
-      const aiText = data.reply[0]
-      const metadata = data.reply[1]
+      const aiText = data.answer
+      const metadata = data.context
+      console.log(data)
 
       messages.value[messages.value.length - 1] = {
         sender: 'ai',

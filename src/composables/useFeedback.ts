@@ -10,14 +10,9 @@ export function useFeedback() {
     showFeedback.value = !showFeedback.value
   }
 
-  const giveFeedback = async (
-    userId: string,
-    convoId: string,
-    messageId: string,
-    type: 'like' | 'dislike',
-  ) => {
+  const giveFeedback = async (userId: string, messageId: string, type: 'like' | 'dislike') => {
     try {
-      await updateMessageFeedback(userId, convoId, messageId, type)
+      await updateMessageFeedback(userId, messageId, type)
       feedbackGiven.value = true
       showFeedback.value = false
     } catch (error) {

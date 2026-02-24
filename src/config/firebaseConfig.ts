@@ -9,14 +9,23 @@ import { getAuth, GithubAuthProvider, signInWithPopup, onAuthStateChanged } from
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// const firebaseConfig = {
+//   apiKey: 'AIzaSyDFxXk8tquXOnzyZI4HdLMNJfzbfUKE2so',
+//   authDomain: 'v-senpai.firebaseapp.com',
+//   projectId: 'v-senpai',
+//   storageBucket: 'v-senpai.firebasestorage.app',
+//   messagingSenderId: '1019660882427',
+//   appId: '1:1019660882427:web:00ce3449de78319bfcbb5e',
+//   measurementId: 'G-V9DTTD8FYJ',
+// }
+
 const firebaseConfig = {
-  apiKey: 'AIzaSyDFxXk8tquXOnzyZI4HdLMNJfzbfUKE2so',
-  authDomain: 'v-senpai.firebaseapp.com',
-  projectId: 'v-senpai',
-  storageBucket: 'v-senpai.firebasestorage.app',
-  messagingSenderId: '1019660882427',
-  appId: '1:1019660882427:web:00ce3449de78319bfcbb5e',
-  measurementId: 'G-V9DTTD8FYJ',
+  apiKey: 'AIzaSyCIUC1RQKxnDyvX0dSdsxmyacSX-DQ30g0',
+  authDomain: 'senpi-2cb31.firebaseapp.com',
+  projectId: 'senpi-2cb31',
+  storageBucket: 'senpi-2cb31.firebasestorage.app',
+  messagingSenderId: '370407493684',
+  appId: '1:370407493684:web:da012a83ad10ba22563a61',
 }
 
 // Initialize Firebase

@@ -43,6 +43,13 @@ const router = createRouter({
       component: () => import('@/views/UserMessagesView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
+    {
+      path: '/dislike-feedback-export',
+      name: 'dislike-feedback-export',
+      component: () => import('@/views/DislikeFeedbackExportView.vue'),
+      meta: { requiresAuth: true },
+      // meta: { requiresAuth: true, requiresAdmin: true },
+    },
   ],
 })
 

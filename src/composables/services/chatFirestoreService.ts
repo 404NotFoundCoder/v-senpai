@@ -9,7 +9,7 @@ import {
   query,
   serverTimestamp,
   addDoc,
-  updateDoc,
+  setDoc,
 } from 'firebase/firestore'
 import { db } from '@/config/firebaseConfig'
 import type { ChatPair, ChatMessage } from './types'
@@ -28,7 +28,7 @@ export const saveConversationToFirestore = async (uid: string, pairs: ChatPair[]
 
 export const fetchChatHistoryFromFirestore = async (uid: string): Promise<ChatPair[]> => {
   try {
-    const convoRef = collection(db, `users/${uid}/conversation-1`)
+    const convoRef = collection(db, `users/${uid}/conversation`)
     const q = query(convoRef, orderBy('createdAt', 'asc'))
     const snapshot = await getDocs(q)
     const pairs: ChatPair[] = []
@@ -97,14 +97,46 @@ export const watchFirestoreMessages = (
 
 export async function updateMessageFeedback(
   userId: string,
-  convoId: string,
   messageId: string,
   type: 'like' | 'dislike',
 ): Promise<void> {
-  const messageRef = doc(db, `users/${userId}/conversation-${convoId}/${messageId}`)
+  // 1. 保存到用户自己的collection（原有功能）
+  const messageRef = doc(db, `users/${userId}/conversation-${type}/${messageId}`)
 
-  await updateDoc(messageRef, {
-    feedback: type,
+  await setDoc(messageRef, {
     feedbackAt: serverTimestamp(),
   })
+
+  // 2. 從 Firestore 讀取完整對話資訊並保存到公共 collection
+  try {
+    const conversationRef = doc(db, `users/${userId}/conversation-0610`, messageId)
+    const conversationSnap = await getDoc(conversationRef)
+
+    if (conversationSnap.exists()) {
+      const data = conversationSnap.data()
+      const messagePairs = data.messagePairs || []
+
+      // 遍歷所有對話對，保存到公共 collection
+      // 路徑: public-feedback-like/${messageId} 或 public-feedback-dislike/${messageId}
+      for (const pair of messagePairs) {
+        if (pair.user && pair.ai) {
+          const collectionName = `public-feedback-${type}` // 'public-feedback-like' 或 'public-feedback-dislike'
+          const feedbackRef = doc(db, collectionName, messageId)
+          await setDoc(feedbackRef, {
+            uid: userId,
+            aiText: pair.ai,
+            userText: pair.user,
+            metadata: pair.metadata || '',
+            createdAt: serverTimestamp(),
+          })
+        }
+      }
+      console.log(`✅ 回饋已保存到公共 collection: public-feedback-${type}/${messageId}`)
+    } else {
+      console.warn('⚠️ 找不到對話紀錄:', messageId)
+    }
+  } catch (error) {
+    console.error('❌ 保存回饋到公共 collection 失敗:', error)
+    // 不拋出錯誤，因為使用者自己的回饋已經保存成功
+  }
 }

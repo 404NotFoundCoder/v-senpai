@@ -88,7 +88,6 @@
 import { useFeedback } from '@/composables/useFeedback'
 import { getAuth } from 'firebase/auth'
 import { computed } from 'vue'
-import { defineProps } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt()
@@ -108,10 +107,111 @@ const { showFeedback, feedbackGiven, showMetadataDialog, toggleFeedback, giveFee
 
 const userId = getAuth().currentUser?.uid || '' // 確保已登入
 
-function sendFeedback(type: 'like' | 'dislike') {
+async function sendFeedback(type: 'like' | 'dislike') {
   if (!props.docid || !userId) return
-  giveFeedback(userId, '1', props.docid, type)
+
+  // 如果是 dislike，調用 draft API
+  if (type === 'dislike') {
+    await callDraftAPI()
+  }
+
+  giveFeedback(userId, props.docid, type)
   alert(type === 'like' ? '感謝你的讚！我們會持續努力！' : '感謝你的回饋，我們會努力改進！')
+}
+
+// 調用 draft API
+async function callDraftAPI() {
+  try {
+    // 獲取使用者訊息
+    const auth = getAuth()
+    const user = auth.currentUser
+    if (!user) {
+      console.error('使用者未登入')
+      return
+    }
+
+    // 從 Firebase 讀取歷史紀錄
+    const {
+      collection,
+      query,
+      getDocs,
+      orderBy: firestoreOrderBy,
+    } = await import('firebase/firestore')
+    const { db } = await import('@/config/firebaseConfig')
+
+    const conversationRef = collection(db, `users/${user.uid}/conversation-0610`)
+    const q = query(conversationRef, firestoreOrderBy('createdAt', 'asc'))
+    const snapshot = await getDocs(q)
+
+    // 收集所有對話
+    const allHistory: Array<{ user: string; ai: string; docId: string }> = []
+    snapshot.forEach((doc) => {
+      const data = doc.data()
+      const messagePairs = data.messagePairs || []
+      messagePairs.forEach((pair: any) => {
+        if (pair.user && pair.ai) {
+          allHistory.push({
+            user: pair.user,
+            ai: pair.ai,
+            docId: doc.id,
+          })
+        }
+      })
+    })
+
+    // 找到目前 docid 的位置
+    const currentDocId = props.docid
+    const currentIndex = allHistory.findIndex((item) => item.docId === currentDocId)
+
+    if (currentIndex === -1) {
+      console.warn('找不到目前對話紀錄')
+      return
+    }
+
+    // 取得前 3 個對話對（不包含目前的）
+    const history = allHistory.slice(Math.max(0, currentIndex - 3), currentIndex)
+
+    // 目前問題就是目前對話對中的 user 問題
+    const finalQuestion = allHistory[currentIndex].user
+
+    console.log('呼叫 draft API:', {
+      history: history.map((h) => ({ user: h.user, ai: h.ai })),
+      finalQuestion,
+    })
+
+    // 從 Firestore 讀取 access token
+    const { readUserAccessToken } = await import('@/composables/services/userService')
+    const accessToken = await readUserAccessToken(user.uid)
+
+    if (!accessToken) {
+      console.error('找不到 access token')
+      return
+    }
+
+    // 呼叫 draft API
+    const response = await fetch('http://localhost:5000/api/draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accessToken: accessToken,
+        history: history.map((h) => ({ user: h.user, ai: h.ai })),
+        finalQuestion: finalQuestion,
+      }),
+      mode: 'cors',
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤！狀態碼: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log('✅ Draft API 回應:', data)
+
+    // 可以在這裡處理回傳的 draft_article，例如顯示給使用者
+    alert(`草稿文章已生成：\n${data.draft}`)
+  } catch (error) {
+    console.error('❌ 呼叫 draft API 失敗:', error)
+  }
 }
 </script>
 
