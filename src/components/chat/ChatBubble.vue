@@ -111,9 +111,9 @@ async function sendFeedback(type: 'like' | 'dislike') {
   if (!props.docid || !userId) return
 
   // 如果是 dislike，調用 draft API
-  if (type === 'dislike') {
-    await callDraftAPI()
-  }
+  // if (type === 'dislike') {
+  //   await callDraftAPI()
+  // }
 
   giveFeedback(userId, props.docid, type)
   alert(type === 'like' ? '感謝你的讚！我們會持續努力！' : '感謝你的回饋，我們會努力改進！')

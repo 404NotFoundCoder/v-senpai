@@ -28,7 +28,7 @@ export const saveConversationToFirestore = async (uid: string, pairs: ChatPair[]
 
 export const fetchChatHistoryFromFirestore = async (uid: string): Promise<ChatPair[]> => {
   try {
-    const convoRef = collection(db, `users/${uid}/conversation`)
+    const convoRef = collection(db, `users/${uid}/conversation-0610`)
     const q = query(convoRef, orderBy('createdAt', 'asc'))
     const snapshot = await getDocs(q)
     const pairs: ChatPair[] = []
