@@ -20,12 +20,12 @@ const router = createRouter({
       component: () => import('../views/FeedbackView.vue'),
       meta: { requiresAuth: true },
     },
-    {
-      path: '/personal',
-      name: 'personal',
-      component: () => import('../views/PersonalView.vue'),
-      meta: { requiresAuth: true },
-    },
+    // {
+    //   path: '/personal',
+    //   name: 'personal',
+    //   component: () => import('../views/PersonalView.vue'),
+    //   meta: { requiresAuth: true },
+    // },
     {
       path: '/feedback-review',
       component: () => import('@/views/FeedbackReviewView.vue'),

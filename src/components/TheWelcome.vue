@@ -13,12 +13,10 @@
 
       <p class="text-sm sm:text-base text-gray-700 mb-3 leading-relaxed">
         請先登入 GitHub，並在授權畫面確認授權給
-        <span class="font-semibold text-indigo-500">GuaYourGuava1919</span>。
+        <span class="font-semibold text-indigo-500">GuaYourGuava1919 and 404NotFoundCoder</span>。
       </p>
 
-      <p class="text-xs sm:text-sm text-gray-500 italic mb-6">
-        📝 阿緹的論文需要你❤️（5/4 已開放回饋功能）
-      </p>
+      <p class="text-xs sm:text-sm text-gray-500 italic mb-6">📝 阿緹 & 書妤的論文需要你❤️</p>
 
       <ImageCarousel class="mb-6" />
     </div>

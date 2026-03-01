@@ -13,9 +13,9 @@
         <router-link v-if="user" to="/chat" class="text-gray-700 hover:text-primary-600"
           >聊天室</router-link
         >
-        <router-link v-if="user" to="/personal" class="text-gray-700 hover:text-primary-600"
+        <!-- <router-link v-if="user" to="/personal" class="text-gray-700 hover:text-primary-600"
           >個人設置</router-link
-        >
+        > -->
         <router-link v-if="user" to="/feedback" class="text-gray-700 hover:text-primary-600"
           >意見回饋</router-link
         >

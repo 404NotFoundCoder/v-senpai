@@ -2,7 +2,9 @@
   <div class="">
     <footer class="bg-primary-100 border-t py-4 w-full text-center text-sm text-gray-600">
       <div class="max-w-5xl mx-auto px-4 text-center space-y-2">
-        <p class="text-sm text-gray-600">&copy; 2025 GuaYourGuava. All rights reserved.</p>
+        <p class="text-sm text-gray-600">
+          &copy; 2026 GuaYourGuava & 404NotFoundCoder. All rights reserved.
+        </p>
         <nav class="flex flex-wrap justify-center gap-4 text-sm">
           <a
             href="#"
@@ -19,11 +21,11 @@
             使用條款
           </a>
           <a
-            href="https://lin.ee/QL9vs11"
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=konigiwa00@gmail.com"
             target="_blank"
             class="text-gray-700 hover:text-primary-500 hover:underline"
           >
-            聯絡阿緹
+            聯絡阿緹與書妤
           </a>
         </nav>
       </div>
@@ -65,7 +67,7 @@
             class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 text-base sm:text-lg rounded-lg shadow transition"
             @click="closeModal"
           >
-            ✅ 我已閱讀並同意
+            ✅ 我已閱讀並同意(使用本系統視同同意條款)
           </button>
         </div>
       </div>
