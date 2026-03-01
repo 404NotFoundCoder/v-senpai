@@ -22,6 +22,7 @@
           v-model="input"
           type="text"
           placeholder="輸入訊息..."
+          @keyup.enter="sendMessage"
           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 transition duration-200"
         />
         <button
