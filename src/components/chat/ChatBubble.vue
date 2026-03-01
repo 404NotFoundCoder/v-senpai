@@ -205,10 +205,33 @@ async function callDraftAPI() {
     }
 
     const data = await response.json()
+
     console.log('✅ Draft API 回應:', data)
 
-    // 可以在這裡處理回傳的 draft_article，例如顯示給使用者
-    alert(`草稿文章已生成：\n${data.draft}`)
+    // 正規化 draft：若後端回傳的是字串（JSON 字串），先解析成物件
+    let draft = data.draft
+    if (typeof draft === 'string') {
+      try {
+        draft = JSON.parse(draft)
+      } catch (e) {
+        console.warn('draft 是字串但無法解析為 JSON:', draft?.slice?.(0, 100))
+        draft = null
+      }
+    }
+    if (draft && typeof draft === 'object' && draft !== null) {
+      console.log('Draft 內容 (物件):', draft)
+      console.log('Draft title:', draft.title)
+      // 可安全使用 draft.title, draft.post 等
+    } else {
+      console.warn('draft 不是預期的物件:', draft)
+    }
+    const url = new URL('http://localhost:3000/create')
+    console.log('Draft 內容:', draft)
+    url.searchParams.append('title', encodeURIComponent(draft.title))
+    url.searchParams.append('post', encodeURIComponent(draft.post))
+
+    window.location.href = url.toString()
+    // alert(`草稿文章已生成：\n${data.draft}`)
   } catch (error) {
     console.error('❌ 呼叫 draft API 失敗:', error)
   }
