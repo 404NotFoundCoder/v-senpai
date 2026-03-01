@@ -35,8 +35,8 @@ export function useChatService(
         console.warn('⚠️ 沒有找到歷史對話，將使用空陣列')
       }
       //deploy
-      // const response = await fetch(`/api/chat`, {
-      const response = await fetch(`http://localhost:5000/api/chat`, {
+      const response = await fetch(`/api/chat`, {
+        // const response = await fetch(`http://localhost:5000/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
