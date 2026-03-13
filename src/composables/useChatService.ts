@@ -35,8 +35,8 @@ export function useChatService(
         console.warn('⚠️ 沒有找到歷史對話，將使用空陣列')
       }
       //deploy
-      const response = await fetch(`/api/chat`, {
-        // const response = await fetch(`http://localhost:5000/api/chat`, {
+      // const response = await fetch(`/api/chat`, {
+      const response = await fetch(`http://localhost:5000/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -52,15 +52,19 @@ export function useChatService(
       const data = await response.json()
       const aiText = data.answer
       const metadata = data.context
+      const references = Array.isArray(data.references) ? data.references : []
+      console.log('references', data.references)
       console.log(data)
 
       messages.value[messages.value.length - 1] = {
         sender: 'ai',
         text: aiText,
         createdAt: new Date().toISOString(),
+        metadata,
+        references,
       }
 
-      messagePairs.value.push({ user: userText, ai: aiText, metadata })
+      messagePairs.value.push({ user: userText, ai: aiText, metadata, references })
       await saveConversationToFirestore(uid, messagePairs.value)
       // await saveChatHistoryToRTDB(uid, [...history, ...messagePairs.value])
       messagePairs.value = []

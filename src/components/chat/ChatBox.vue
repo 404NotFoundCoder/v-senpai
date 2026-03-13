@@ -7,6 +7,7 @@
       :isSelf="msg.sender === 'user'"
       :timestamp="msg.createdAt"
       :metadata="msg.metadata"
+      :references="msg.references"
       :docid="msg.docid"
     />
   </div>
@@ -22,6 +23,7 @@ const props = defineProps<{
     text: string
     createdAt: string
     metadata?: string
+    references?: { id: string; source: string; content: string }[]
     docid?: string
     feedback?: string
   }[]

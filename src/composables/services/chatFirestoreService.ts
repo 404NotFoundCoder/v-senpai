@@ -37,7 +37,12 @@ export const fetchChatHistoryFromFirestore = async (uid: string): Promise<ChatPa
       const data = doc.data()
       if (Array.isArray(data.messagePairs)) {
         data.messagePairs.forEach((pair: any) => {
-          pairs.push({ user: pair.user, ai: pair.ai, metadata: pair.metadata })
+          pairs.push({
+            user: pair.user,
+            ai: pair.ai,
+            metadata: pair.metadata ?? '',
+            references: Array.isArray(pair.references) ? pair.references : undefined,
+          })
         })
       }
     }
@@ -83,6 +88,7 @@ export const watchFirestoreMessages = (
           text: pair.ai,
           createdAt: timestamp,
           metadata: pair.metadata,
+          references: Array.isArray(pair.references) ? pair.references : undefined,
           feedback: data.feedback ?? undefined,
         })
       })

@@ -29,6 +29,7 @@ export function useAuth() {
         accessToken,
         priority: false,
         createdAt: new Date(),
+        role: 'user',
       })
     }
 

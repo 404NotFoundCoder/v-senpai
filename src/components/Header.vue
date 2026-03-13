@@ -19,6 +19,9 @@
         <router-link v-if="user" to="/feedback" class="text-gray-700 hover:text-primary-600"
           >意見回饋</router-link
         >
+        <a v-if="user" href="http://localhost:3000/" class="text-gray-700 hover:text-primary-600">
+          論壇
+        </a>
         <!-- 登入按鈕 -->
         <button
           class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition"
@@ -47,9 +50,9 @@
         <router-link v-if="user" to="/chat" class="py-2 text-gray-700 hover:text-primary-600"
           >聊天室</router-link
         >
-        <router-link v-if="user" to="/personal" class="py-2 text-gray-700 hover:text-primary-600"
+        <!-- <router-link v-if="user" to="/personal" class="py-2 text-gray-700 hover:text-primary-600"
           >個人設置</router-link
-        >
+        > -->
         <router-link v-if="user" to="/feedback" class="py-2 text-gray-700 hover:text-primary-600"
           >意見回饋</router-link
         >

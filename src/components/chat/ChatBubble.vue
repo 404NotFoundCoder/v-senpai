@@ -58,25 +58,34 @@
     </div>
   </div>
 
-  <!-- Metadata Dialog -->
-  <div
-    v-if="showMetadataDialog"
-    class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-5"
-    @click.self="showMetadataDialog = false"
-  >
-    <div
-      class="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[80vh] p-6 animate-fade-in overflow-y-scroll"
-    >
-      <h2 class="text-lg font-semibold mb-3 text-primary-800 border-b pb-2">原始內容</h2>
-      <pre
-        class="text-sm text-primary-700 whitespace-pre-wrap break-words font-mono leading-relaxed"
-        >{{ props.metadata || '（無原文說明）' }}
-      </pre>
-      <div class="text-right mt-4">
-        <button
-          class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md shadow hover:bg-red-600 transition"
-          @click="showMetadataDialog = false"
-        >
+  <!-- 原文 / References Dialog -->
+  <div v-if="showMetadataDialog" class="reference-overlay" @click.self="showMetadataDialog = false">
+    <div class="reference-dialog">
+      <h2 class="reference-title">參考原文</h2>
+
+      <div class="reference-body">
+        <template v-if="referencesList.length">
+          <div v-for="(ref, i) in referencesList" :key="ref.id + String(i)" class="reference-item">
+            <a
+              :href="refLink(ref.id)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="reference-link"
+            >
+              <span class="reference-link-emoji" aria-hidden="true">🔗</span>
+              <span class="reference-link-text">{{ ref.source || '（無標題）' }}</span>
+            </a>
+            <div class="reference-content">{{ ref.content || '（無內文）' }}</div>
+          </div>
+        </template>
+
+        <template v-else>
+          <pre class="reference-fallback">{{ props.metadata || '（無原文說明）' }}</pre>
+        </template>
+      </div>
+
+      <div class="reference-actions">
+        <button type="button" class="reference-close" @click="showMetadataDialog = false">
           關閉
         </button>
       </div>
@@ -92,13 +101,33 @@ import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt()
 
+export interface ReferenceItem {
+  id: string
+  source: string
+  content: string
+}
+
 const props = defineProps<{
   text: string
   isSelf?: boolean
   timestamp?: string
   metadata?: string
+  references?: ReferenceItem[]
   docid?: string
 }>()
+
+const BASE_POST_URL = 'http://localhost:3000/post'
+const refLink = (id: string) => `${BASE_POST_URL}/${id}`
+
+const referencesList = computed(() => {
+  const r = props.references
+  if (!Array.isArray(r) || r.length === 0) return []
+  return r.map((item) => ({
+    id: item?.id ?? '',
+    source: item?.source ?? '',
+    content: item?.content ?? '',
+  }))
+})
 
 const renderedText = computed(() => md.render(props.text || ''))
 
@@ -111,9 +140,9 @@ async function sendFeedback(type: 'like' | 'dislike') {
   if (!props.docid || !userId) return
 
   // 如果是 dislike，調用 draft API
-  // if (type === 'dislike') {
-  //   await callDraftAPI()
-  // }
+  if (type === 'dislike') {
+    await callDraftAPI()
+  }
 
   giveFeedback(userId, props.docid, type)
   alert(type === 'like' ? '感謝你的讚！我們會持續努力！' : '感謝你的回饋，我們會努力改進！')
@@ -225,7 +254,7 @@ async function callDraftAPI() {
     } else {
       console.warn('draft 不是預期的物件:', draft)
     }
-    const url = new URL('http://localhost:3000/create')
+    const url = new URL('http://localhost:5173/chat')
     console.log('Draft 內容:', draft)
     url.searchParams.append('title', encodeURIComponent(draft.title))
     url.searchParams.append('post', encodeURIComponent(draft.post))
@@ -251,5 +280,128 @@ async function callDraftAPI() {
 }
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
+}
+
+/* 參考原文彈窗：質感版，配色符合 primary 設計 */
+.reference-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(63, 40, 37, 0.25);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1.25rem;
+}
+.reference-dialog {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow:
+    0 25px 50px -12px rgba(63, 40, 37, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+  max-width: 32rem;
+  width: 100%;
+  max-height: 80vh;
+  padding: 1.5rem;
+  overflow-y: auto;
+  animation: reference-dialog-in 0.25s ease-out;
+}
+@keyframes reference-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.reference-title {
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: #654039;
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(167, 111, 101, 0.2);
+  letter-spacing: 0.02em;
+}
+.reference-body {
+  background: #fdf7f0;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+.reference-item {
+  padding: 0.75rem 0;
+}
+.reference-item:not(:last-child) {
+  border-bottom: 1px solid rgba(201, 146, 136, 0.25);
+}
+.reference-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #a76f65;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s ease;
+}
+.reference-link:hover {
+  color: #87564d;
+}
+.reference-link-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+.reference-link-text {
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+.reference-link:hover .reference-link-text {
+  border-bottom-color: #c79288;
+}
+.reference-content {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #654039;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: transparent;
+  padding: 0;
+}
+.reference-fallback {
+  font-size: 0.875rem;
+  color: #654039;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  line-height: 1.6;
+  margin: 0;
+}
+.reference-actions {
+  margin-top: 1.25rem;
+  text-align: right;
+}
+.reference-close {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  background: #a76f65;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(63, 40, 37, 0.1);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.reference-close:hover {
+  background: #87564d;
+  box-shadow: 0 2px 4px rgba(63, 40, 37, 0.15);
 }
 </style>
