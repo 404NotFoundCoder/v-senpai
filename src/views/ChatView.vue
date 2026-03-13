@@ -2,7 +2,7 @@
   <div class="flex flex-col h-screen">
     <!-- 中間聊天訊息區 -->
     <div class="flex-1 overflow-y-auto">
-      <ChatBox :messages="messages" />
+      <ChatBox :messages="messages" :is-thinking="isThinking" />
     </div>
     <!-- <SuggestedQuestions
       :questions="[
