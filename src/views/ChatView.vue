@@ -15,18 +15,22 @@
       ]"
       @select="handleSuggestedQuestion"
     /> -->
-    <!-- 輸入框區 -->
-    <div class="bg-white px-4 py-3 shadow-md w-full">
-      <div class="flex items-center gap-2 max-w-4xl mx-auto">
-        <input
+    <!-- 輸入框區：Shift+Enter 換行、Enter 發送，RWD 響應式 -->
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea
+          ref="inputRef"
           v-model="input"
-          type="text"
-          placeholder="輸入訊息..."
-          @keyup.enter="sendMessage"
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 transition duration-200"
+          placeholder="輸入訊息...（Shift+Enter 換行，Enter 發送）"
+          rows="1"
+          class="chat-input"
+          @keydown="handleKeydown"
+          @input="autoResize"
         />
         <button
-          class="bg-primary-500 hover:bg-primary-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition duration-200"
+          type="button"
+          class="chat-send-btn"
+          :disabled="!input.trim()"
           @click="sendMessage"
         >
           發送
@@ -37,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import ChatBox from '../components/chat/ChatBox.vue'
 import { useChatService } from '@/composables/useChatService'
 import { watchFirestoreMessages } from '@/composables/services/chatFirestoreService'
@@ -47,8 +51,31 @@ import { auth } from '@/config/firebaseConfig'
 
 // 狀態
 const input = ref('')
+const inputRef = ref<HTMLTextAreaElement | null>(null)
 const isThinking = ref(false)
 const messages = ref([])
+
+const MIN_ROWS = 1
+const MAX_ROWS = 6
+const LINE_HEIGHT = 24
+
+function autoResize() {
+  nextTick(() => {
+    const el = inputRef.value
+    if (!el) return
+    el.style.height = 'auto'
+    const minH = MIN_ROWS * LINE_HEIGHT
+    const maxH = MAX_ROWS * LINE_HEIGHT
+    el.style.height = `${Math.min(maxH, Math.max(minH, el.scrollHeight))}px`
+  })
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    sendMessage()
+  }
+}
 
 // 注入主邏輯
 const { sendMessage, readUserData, handleSuggestedQuestion } = useChatService(
@@ -81,3 +108,97 @@ onAuthStateChanged(auth, (user) => {
   }
 })
 </script>
+
+<style scoped>
+.chat-input-area {
+  background: #fff;
+  padding: 0.75rem 1rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.06);
+}
+.chat-input-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: 56rem;
+  margin: 0 auto;
+  width: 100%;
+}
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.5rem;
+  max-height: 9rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  overflow-y: auto;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chat-input:focus {
+  outline: none;
+  border-color: #e4b2a0;
+  box-shadow: 0 0 0 2px rgba(228, 178, 160, 0.3);
+}
+.chat-input::placeholder {
+  color: #9ca3af;
+}
+.chat-send-btn {
+  flex-shrink: 0;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #fff;
+  background: #C79288;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.chat-send-btn:hover:not(:disabled) {
+  background: #A76F65;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.chat-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* RWD：平板 */
+@media (min-width: 640px) {
+  .chat-input-area {
+    padding: 1rem 1.5rem;
+  }
+  .chat-input-wrap {
+    gap: 0.75rem;
+  }
+  .chat-input {
+    padding: 0.625rem 1rem;
+  }
+  .chat-send-btn {
+    min-height: 2.75rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 1rem;
+  }
+}
+
+/* RWD：桌面 */
+@media (min-width: 1024px) {
+  .chat-input-area {
+    padding: 0.75rem 1.5rem 1rem;
+  }
+}
+
+/* RWD：手機觸控優化（最小觸控面積 44px） */
+@media (max-width: 639px) {
+  .chat-send-btn {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+}
+</style>

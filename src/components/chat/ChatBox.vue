@@ -1,5 +1,5 @@
 <template>
-  <div ref="chatContainer" class="mt-20 px-10 space-y-2 overflow-y-auto bg-gray-50 h-full">
+  <div ref="chatContainer" class="mt-16 sm:mt-20 px-4 sm:px-6 lg:px-10 py-3 space-y-2 overflow-y-auto bg-gray-50 h-full">
     <ChatBubble
       v-for="(msg, index) in messages"
       :key="index"
