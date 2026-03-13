@@ -19,13 +19,24 @@ import { getAuth, GithubAuthProvider, signInWithPopup, onAuthStateChanged } from
 //   measurementId: 'G-V9DTTD8FYJ',
 // }
 
+//目前senpi
+// const firebaseConfig = {
+//   apiKey: 'AIzaSyCIUC1RQKxnDyvX0dSdsxmyacSX-DQ30g0',
+//   authDomain: 'senpi-2cb31.firebaseapp.com',
+//   projectId: 'senpi-2cb31',
+//   storageBucket: 'senpi-2cb31.firebasestorage.app',
+//   messagingSenderId: '370407493684',
+//   appId: '1:370407493684:web:da012a83ad10ba22563a61',
+// }
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: 'AIzaSyCIUC1RQKxnDyvX0dSdsxmyacSX-DQ30g0',
-  authDomain: 'senpi-2cb31.firebaseapp.com',
-  projectId: 'senpi-2cb31',
-  storageBucket: 'senpi-2cb31.firebasestorage.app',
-  messagingSenderId: '370407493684',
-  appId: '1:370407493684:web:da012a83ad10ba22563a61',
+  apiKey: 'AIzaSyAK0z7P3cqY-tkNA3o7ekutlpzHZ_xV4JE',
+  authDomain: 'forum-12c4f.firebaseapp.com',
+  projectId: 'forum-12c4f',
+  storageBucket: 'forum-12c4f.firebasestorage.app',
+  messagingSenderId: '4399203573',
+  appId: '1:4399203573:web:27d69e7e459c40be2b31bc',
 }
 
 // Initialize Firebase

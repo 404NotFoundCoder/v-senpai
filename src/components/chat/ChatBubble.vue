@@ -2,14 +2,14 @@
   <div class="flex my-5" :class="isSelf ? 'justify-end' : 'justify-start'">
     <div class="flex flex-col" :class="isSelf ? 'items-end' : 'items-start'">
       <div
-        class="max-w-md px-4 py-2 rounded-2xl shadow-md whitespace-pre-wrap break-words"
+        class="max-w-md px-4 py-2 rounded-2xl shadow-md break-words chat-bubble-inner"
         :class="
           isSelf
             ? 'bg-primary-500 text-white rounded-br-none'
             : 'bg-primary-100 text-primary-800 rounded-bl-none'
         "
       >
-        {{ text }}
+        <div class="chat-markdown" v-html="renderedText"></div>
       </div>
 
       <span class="text-xs text-gray-400 mt-1" v-if="timestamp">{{ timestamp }}</span>
@@ -99,7 +99,7 @@ import { getAuth } from 'firebase/auth'
 import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 
-const md = new MarkdownIt()
+const md = new MarkdownIt({ linkify: true })
 
 export interface ReferenceItem {
   id: string
@@ -254,7 +254,7 @@ async function callDraftAPI() {
     } else {
       console.warn('draft 不是預期的物件:', draft)
     }
-    const url = new URL('http://localhost:5173/chat')
+    const url = new URL('http://localhost:3000/create')
     console.log('Draft 內容:', draft)
     url.searchParams.append('title', encodeURIComponent(draft.title))
     url.searchParams.append('post', encodeURIComponent(draft.post))
@@ -280,6 +280,76 @@ async function callDraftAPI() {
 }
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
+}
+
+/* Markdown 訊息樣式（繼承父層顏色以適應 user/AI 氣泡） */
+.chat-markdown :deep(p) {
+  margin: 0 0 0.5em;
+}
+.chat-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.chat-markdown :deep(h1),
+.chat-markdown :deep(h2),
+.chat-markdown :deep(h3) {
+  margin: 0.75em 0 0.35em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.chat-markdown :deep(h1) { font-size: 1.1em; }
+.chat-markdown :deep(h2) { font-size: 1.05em; }
+.chat-markdown :deep(h3) { font-size: 1em; }
+.chat-markdown :deep(ul),
+.chat-markdown :deep(ol) {
+  margin: 0.5em 0;
+  padding-left: 1.25em;
+}
+.chat-markdown :deep(li) {
+  margin: 0.2em 0;
+}
+.chat-markdown :deep(code) {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25em;
+  background: rgba(0, 0, 0, 0.08);
+}
+.chat-bubble-inner.bg-primary-500 .chat-markdown :deep(code) {
+  background: rgba(255, 255, 255, 0.2);
+}
+.chat-markdown :deep(pre) {
+  margin: 0.5em 0;
+  padding: 0.75em 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  background: rgba(0, 0, 0, 0.06);
+}
+.chat-bubble-inner.bg-primary-500 .chat-markdown :deep(pre) {
+  background: rgba(255, 255, 255, 0.15);
+}
+.chat-markdown :deep(pre code) {
+  padding: 0;
+  background: none;
+}
+.chat-markdown :deep(blockquote) {
+  margin: 0.5em 0;
+  padding-left: 1em;
+  border-left: 3px solid currentColor;
+  opacity: 0.9;
+}
+.chat-markdown :deep(a) {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.chat-markdown :deep(a:hover) {
+  opacity: 0.85;
+}
+.chat-markdown :deep(hr) {
+  margin: 0.75em 0;
+  border: none;
+  border-top: 1px solid currentColor;
+  opacity: 0.4;
 }
 
 /* 參考原文彈窗：質感版，配色符合 primary 設計 */
