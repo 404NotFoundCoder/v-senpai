@@ -30,24 +30,15 @@ const props = defineProps<{
 }>()
 
 const chatContainer = ref<HTMLElement | null>(null)
-const previousHeight = ref(0)
 
 watch(
-  () => props.messages.length,
+  () => props.messages,
   async () => {
+    await nextTick()
     const el = chatContainer.value
     if (!el) return
-
-    // 儲存原本的滾動高度
-    previousHeight.value = el.scrollHeight
-
-    await nextTick()
-
-    const newHeight = el.scrollHeight
-    const heightDiff = newHeight - previousHeight.value
-
-    // 自然往下滾一格
-    el.scrollTop += heightDiff
+    el.scrollTop = el.scrollHeight
   },
+  { deep: true },
 )
 </script>

@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import ChatBox from '../components/chat/ChatBox.vue'
 import { useChatService } from '@/composables/useChatService'
 import { watchFirestoreMessages } from '@/composables/services/chatFirestoreService'
@@ -63,12 +63,21 @@ function autoResize() {
   nextTick(() => {
     const el = inputRef.value
     if (!el) return
+    if (!el.value.trim()) {
+      el.style.height = `${MIN_ROWS * LINE_HEIGHT}px`
+      return
+    }
     el.style.height = 'auto'
     const minH = MIN_ROWS * LINE_HEIGHT
     const maxH = MAX_ROWS * LINE_HEIGHT
     el.style.height = `${Math.min(maxH, Math.max(minH, el.scrollHeight))}px`
   })
 }
+
+// 傳送後 input 被清空時，程式不會觸發 @input，需用 watch 強制重置為單行高度
+watch(input, (val) => {
+  if (!val.trim()) nextTick(() => autoResize())
+})
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
