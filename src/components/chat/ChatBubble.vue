@@ -91,12 +91,45 @@
       </div>
     </div>
   </div>
+
+  <!-- 不滿意回饋：詢問是否前往論壇發問 -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="showDislikeFollowUp" class="dislike-followup-overlay">
+        <div class="dislike-followup-dialog">
+          <p class="dislike-followup-text">已收到你的回饋！</p>
+          <p class="dislike-followup-question">要我們幫你生成草稿文章，前往論壇發問嗎？</p>
+          <div class="dislike-followup-actions">
+            <button type="button" class="btn-generate" @click="handleGenerateDraft">
+              要，幫我生成
+            </button>
+            <button type="button" class="btn-skip" @click="handleSkipDraft">
+              不用了
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- 生成草稿時的 Loading 遮罩 -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="isDraftLoading" class="draft-loading-overlay">
+        <div class="draft-loading-content">
+          <div class="draft-loading-spinner"></div>
+          <p class="draft-loading-text">正在為你生成草稿，請稍候...</p>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { useFeedback } from '@/composables/useFeedback'
+import { useToast } from '@/composables/useToast'
 import { getAuth } from 'firebase/auth'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt({ linkify: true })
@@ -133,19 +166,43 @@ const renderedText = computed(() => md.render(props.text || ''))
 
 const { showFeedback, feedbackGiven, showMetadataDialog, toggleFeedback, giveFeedback } =
   useFeedback()
+const { showToast } = useToast()
 
 const userId = getAuth().currentUser?.uid || '' // 確保已登入
+
+const showDislikeFollowUp = ref(false)
+const isDraftLoading = ref(false)
 
 async function sendFeedback(type: 'like' | 'dislike') {
   if (!props.docid || !userId) return
 
-  // 如果是 dislike，調用 draft API
-  if (type === 'dislike') {
-    await callDraftAPI()
+  giveFeedback(userId, props.docid, type)
+
+  if (type === 'like') {
+    showToast('感謝你的讚！我們會持續努力！')
+    return
   }
 
-  giveFeedback(userId, props.docid, type)
-  alert(type === 'like' ? '感謝你的讚！我們會持續努力！' : '感謝你的回饋，我們會努力改進！')
+  // 不滿意：直接顯示詢問是否前往論壇的對話框
+  showDislikeFollowUp.value = true
+}
+
+function handleSkipDraft() {
+  showDislikeFollowUp.value = false
+  showToast('感謝你的回饋！')
+}
+
+async function handleGenerateDraft() {
+  showDislikeFollowUp.value = false
+  isDraftLoading.value = true
+  try {
+    await callDraftAPI()
+    // 成功會 redirect，不需手動關閉 loading
+  } catch {
+    showToast('生成失敗，請稍後再試')
+  } finally {
+    isDraftLoading.value = false
+  }
 }
 
 // 調用 draft API
@@ -247,22 +304,18 @@ async function callDraftAPI() {
         draft = null
       }
     }
-    if (draft && typeof draft === 'object' && draft !== null) {
-      console.log('Draft 內容 (物件):', draft)
-      console.log('Draft title:', draft.title)
-      // 可安全使用 draft.title, draft.post 等
-    } else {
+    if (!draft || typeof draft !== 'object') {
       console.warn('draft 不是預期的物件:', draft)
+      throw new Error('無法解析草稿內容')
     }
     const url = new URL('http://localhost:3000/create')
-    console.log('Draft 內容:', draft)
-    url.searchParams.append('title', encodeURIComponent(draft.title))
-    url.searchParams.append('post', encodeURIComponent(draft.post))
+    url.searchParams.append('title', encodeURIComponent(draft.title ?? ''))
+    url.searchParams.append('post', encodeURIComponent(draft.post ?? ''))
 
     window.location.href = url.toString()
-    // alert(`草稿文章已生成：\n${data.draft}`)
   } catch (error) {
     console.error('❌ 呼叫 draft API 失敗:', error)
+    throw error
   }
 }
 </script>
@@ -473,5 +526,116 @@ async function callDraftAPI() {
 .reference-close:hover {
   background: #87564d;
   box-shadow: 0 2px 4px rgba(63, 40, 37, 0.15);
+}
+
+/* 不滿意回饋：詢問前往論壇的 dialog */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+.dislike-followup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(63, 40, 37, 0.3);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 1rem;
+}
+.dislike-followup-dialog {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  max-width: 20rem;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(63, 40, 37, 0.15), 0 0 0 1px rgba(201, 146, 136, 0.2);
+}
+.dislike-followup-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #654039;
+  margin: 0 0 0.5rem;
+}
+.dislike-followup-question {
+  font-size: 0.9375rem;
+  color: #654039;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+}
+.dislike-followup-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+.btn-generate {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+  background: #A76F65;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-generate:hover {
+  background: #87564D;
+}
+.btn-skip {
+  padding: 0.6rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #654039;
+  background: #FBECDC;
+  border: 1px solid rgba(201, 146, 136, 0.4);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-skip:hover {
+  background: #F9D8C1;
+}
+
+/* 生成草稿 Loading 遮罩 */
+.draft-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.draft-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.draft-loading-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #FBECDC;
+  border-top-color: #A76F65;
+  border-radius: 50%;
+  animation: draft-spin 0.8s linear infinite;
+}
+.draft-loading-text {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #654039;
+  margin: 0;
+}
+@keyframes draft-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
