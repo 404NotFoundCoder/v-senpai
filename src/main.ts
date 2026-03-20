@@ -8,7 +8,17 @@ import router from './router'
 import './config/firebaseConfig'
 import { loginForumFromQueryToken } from './utils/forumAuth'
 
+function toggleBootLoader(visible: boolean) {
+  const el = document.getElementById('boot-loader')
+  if (!el) return
+  if (visible) el.classList.remove('hidden')
+  else el.classList.add('hidden')
+}
+
 async function bootstrap() {
+  const hasToken = new URL(window.location.href).searchParams.get('t')
+  if (hasToken) toggleBootLoader(true)
+
   // 先處理 customToken 自動登入，避免被 router guard 提前導回
   await loginForumFromQueryToken()
 
@@ -29,6 +39,7 @@ async function bootstrap() {
   }
 
   app.mount('#app')
+  toggleBootLoader(false)
 }
 
 bootstrap()
