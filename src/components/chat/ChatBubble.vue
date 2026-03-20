@@ -68,9 +68,8 @@
           <div v-for="(ref, i) in referencesList" :key="ref.id + String(i)" class="reference-item">
             <a
               :href="refLink(ref.id)"
-              target="_blank"
-              rel="noopener noreferrer"
               class="reference-link"
+              @click.prevent="openRefPost(ref.id)"
             >
               <span class="reference-link-emoji" aria-hidden="true">🔗</span>
               <span class="reference-link-text">{{ ref.source || '（無標題）' }}</span>
@@ -129,6 +128,7 @@
 import { useFeedback } from '@/composables/useFeedback'
 import { useToast } from '@/composables/useToast'
 import { formatChatTimestamp } from '@/utils/dateTime'
+import { buildForumUrl, goForum } from '@/utils/forumAuth'
 import { getAuth } from 'firebase/auth'
 import { computed, ref } from 'vue'
 import MarkdownIt from 'markdown-it'
@@ -152,6 +152,15 @@ const props = defineProps<{
 
 const BASE_POST_URL = 'http://localhost:3000/post'
 const refLink = (id: string) => `${BASE_POST_URL}/${id}`
+
+async function openRefPost(id: string) {
+  try {
+    await goForum(`/post/${id}`)
+  } catch (error) {
+    console.error('前往論壇文章失敗:', error)
+    showToast('前往論壇失敗，請稍後再試', 'info')
+  }
+}
 
 const referencesList = computed(() => {
   const r = props.references
@@ -313,11 +322,11 @@ async function callDraftAPI() {
       console.warn('draft 不是預期的物件:', draft)
       throw new Error('無法解析草稿內容')
     }
-    const url = new URL('http://localhost:3000/create')
-    url.searchParams.append('title', encodeURIComponent(draft.title ?? ''))
-    url.searchParams.append('post', encodeURIComponent(draft.post ?? ''))
-
-    window.location.href = url.toString()
+    const forumUrl = await buildForumUrl('/create', {
+      title: draft.title ?? '',
+      post: draft.post ?? '',
+    })
+    window.location.href = forumUrl
   } catch (error) {
     console.error('❌ 呼叫 draft API 失敗:', error)
     throw error

@@ -19,9 +19,14 @@
         <router-link v-if="user" to="/feedback" class="text-gray-700 hover:text-primary-600"
           >意見回饋</router-link
         >
-        <a v-if="user" href="http://localhost:3000/" class="text-gray-700 hover:text-primary-600">
+        <button
+          v-if="user"
+          type="button"
+          class="text-gray-700 hover:text-primary-600"
+          @click="openForum"
+        >
           論壇
-        </a>
+        </button>
         <!-- 登入按鈕 -->
         <button
           class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition"
@@ -57,6 +62,14 @@
           >意見回饋</router-link
         >
         <button
+          v-if="user"
+          type="button"
+          class="py-2 text-gray-700 hover:text-primary-600 text-left"
+          @click="openForum"
+        >
+          論壇
+        </button>
+        <button
           class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition"
           @click="handleAuth"
         >
@@ -70,8 +83,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { goForum } from '@/utils/forumAuth'
 
 const isOpen = ref(false)
 const toggleMenu = () => {
@@ -80,6 +95,7 @@ const toggleMenu = () => {
 const auth = getAuth()
 const router = useRouter()
 const { user, signInWithGitHub, logout } = useAuth()
+const { showToast } = useToast()
 
 function handleAuth() {
   if (user.value) {
@@ -88,6 +104,15 @@ function handleAuth() {
   } else {
     signInWithGitHub()
     console.log('GitHub 登入')
+  }
+}
+
+async function openForum() {
+  try {
+    await goForum('/')
+  } catch (error) {
+    console.error('論壇跳轉失敗:', error)
+    showToast('論壇登入連結建立失敗，請稍後再試', 'info')
   }
 }
 
