@@ -4,17 +4,19 @@
     <div class="flex-1 overflow-y-auto">
       <ChatBox :messages="messages" :is-thinking="isThinking" />
     </div>
-    <!-- <SuggestedQuestions
-      :questions="[
-        '從系統分析與設計課程中遇到什麼問題？如何解決？',
-        '使用 git 嗎？',
-        '使用哪個語言、資料庫開發？為什麼選擇它？優缺點是？',
-        '使用生成式人工智慧嗎？如何使用？遇到什麼問題？',
-        '如何定期追蹤組員進度？遇到什麼問題？',
-        '對各位的建議是？',
-      ]"
-      @select="handleSuggestedQuestion"
-    /> -->
+    <div class="suggested-slot">
+      <SuggestedQuestions
+        :questions="[
+          '從系統分析與設計課程中遇到什麼問題？如何解決？',
+          '使用 git 嗎？',
+          '使用哪個語言、資料庫開發？為什麼選擇它？優缺點是？',
+          '使用生成式人工智慧嗎？如何使用？遇到什麼問題？',
+          '如何定期追蹤組員進度？遇到什麼問題？',
+          '對各位的建議是？',
+        ]"
+        @select="handleSuggestedQuestion"
+      />
+    </div>
     <!-- 輸入框區：Shift+Enter 換行、Enter 發送，RWD 響應式 -->
     <div class="chat-input-area">
       <div class="chat-input-wrap">
@@ -27,12 +29,7 @@
           @keydown="handleKeydown"
           @input="autoResize"
         />
-        <button
-          type="button"
-          class="chat-send-btn"
-          :disabled="!input.trim()"
-          @click="sendMessage"
-        >
+        <button type="button" class="chat-send-btn" :disabled="!input.trim()" @click="sendMessage">
           發送
         </button>
       </div>
@@ -47,7 +44,7 @@ import { useChatService } from '@/composables/useChatService'
 import { watchFirestoreMessages } from '@/composables/services/chatFirestoreService'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/config/firebaseConfig'
-// import SuggestedQuestions from '../components/chat/SuggestedQuestions.vue'
+import SuggestedQuestions from '../components/chat/SuggestedQuestions.vue'
 
 // 狀態
 const input = ref('')
@@ -119,6 +116,12 @@ onAuthStateChanged(auth, (user) => {
 </script>
 
 <style scoped>
+.suggested-slot {
+  position: relative;
+  height: 0;
+  overflow: visible;
+}
+
 .chat-input-area {
   background: #fff;
   padding: 0.75rem 1rem;
@@ -145,7 +148,9 @@ onAuthStateChanged(auth, (user) => {
   line-height: 1.5;
   resize: none;
   overflow-y: auto;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .chat-input:focus {
   outline: none;
@@ -162,15 +167,17 @@ onAuthStateChanged(auth, (user) => {
   font-weight: 600;
   font-size: 0.9375rem;
   color: #fff;
-  background: #C79288;
+  background: #c79288;
   border: none;
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
 }
 .chat-send-btn:hover:not(:disabled) {
-  background: #A76F65;
+  background: #a76f65;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .chat-send-btn:disabled {
