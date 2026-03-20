@@ -12,7 +12,7 @@
         <div class="chat-markdown" v-html="renderedText"></div>
       </div>
 
-      <span class="text-xs text-gray-400 mt-1" v-if="timestamp">{{ timestamp }}</span>
+      <span class="text-xs text-gray-400 mt-1" v-if="formattedTimestamp">{{ formattedTimestamp }}</span>
 
       <!-- 回饋區塊（僅非自己訊息顯示） -->
       <div v-if="!isSelf" class="mt-2">
@@ -128,6 +128,7 @@
 <script setup lang="ts">
 import { useFeedback } from '@/composables/useFeedback'
 import { useToast } from '@/composables/useToast'
+import { formatChatTimestamp } from '@/utils/dateTime'
 import { getAuth } from 'firebase/auth'
 import { computed, ref } from 'vue'
 import MarkdownIt from 'markdown-it'
@@ -163,6 +164,10 @@ const referencesList = computed(() => {
 })
 
 const renderedText = computed(() => md.render(props.text || ''))
+
+const formattedTimestamp = computed(() => {
+  return formatChatTimestamp(props.timestamp)
+})
 
 const { showFeedback, feedbackGiven, showMetadataDialog, toggleFeedback, giveFeedback } =
   useFeedback()

@@ -14,6 +14,7 @@ import {
 import { db } from '@/config/firebaseConfig'
 import type { ChatPair, ChatMessage } from './types'
 import type { Ref } from 'vue'
+import { formatChatTimestamp } from '@/utils/dateTime'
 
 export const saveConversationToFirestore = async (uid: string, pairs: ChatPair[]) => {
   try {
@@ -72,8 +73,7 @@ export const watchFirestoreMessages = (
         feedback?: string
       }
 
-      const timestamp =
-        data.createdAt?.toDate?.()?.toLocaleString?.() ?? new Date().toLocaleString()
+      const timestamp = formatChatTimestamp(data.createdAt?.toDate?.() ?? new Date())
 
       data.messagePairs.forEach((pair) => {
         loadedMessages.push({
