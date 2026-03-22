@@ -148,7 +148,8 @@ const props = defineProps<{
   docid?: string
 }>()
 
-const BASE_POST_URL = 'http://localhost:3000/post'
+// const BASE_POST_URL = 'http://localhost:3000/post'
+const BASE_POST_URL = 'http://sa-forum.vercel.app/post'
 const refLink = (id: string) => `${BASE_POST_URL}/${id}`
 
 async function openRefPost(id: string) {
@@ -287,7 +288,8 @@ async function callDraftAPI() {
     }
 
     // 呼叫 draft API
-    const response = await fetch('http://localhost:5000/api/draft', {
+    // const response = await fetch('http://localhost:5000/api/draft', {
+    const response = await fetch('/api/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

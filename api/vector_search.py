@@ -1,9 +1,10 @@
 import os
 import sys
 
-import cohere
 from dotenv import load_dotenv
 from pinecone import Pinecone
+
+from api.embed_utils import cohere_embed_with_fallback
 
 # 設定標準輸出編碼為 UTF-8
 sys.stdout.reconfigure(encoding="utf-8")
@@ -11,29 +12,15 @@ sys.stdout.reconfigure(encoding="utf-8")
 load_dotenv()
 
 
-# 初始化 Cohere
-co = cohere.ClientV2()
-
-
 def vector_search_light(user_input: str, top_k: int = 50) -> dict:
     try:
         # 初始化 Pinecone
         pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-        index_name = "vec-0601"
+        index_name = "vec-test-1"
         index = pc.Index(index_name)
 
-        # 初始化 Cohere
-        co = cohere.ClientV2()
-
-        response = co.embed(
-            texts=[user_input],
-            model="embed-multilingual-v3.0",
-            input_type="search_query",
-            embedding_types=["float"],
-        )
-
         # 取得向量
-        vector = response.embeddings.float_[0]
+        vector = cohere_embed_with_fallback(user_input)
 
         # 查詢 Pinecone
         results = index.query(
@@ -53,15 +40,37 @@ def vector_search_light(user_input: str, top_k: int = 50) -> dict:
         # 取篩選後最高的三筆（可能少於三筆）
         top_three_matches = filtered_matches[:3]
 
+        def _format_match(match: dict) -> str:
+            metadata = match.get("metadata", {}) or {}
+            source = metadata.get("source", "")
+            content = metadata.get("content", "")
+            comment = metadata.get("comment")
+
+            base = f"標題：{source}\n內文：{content}"
+            if comment:
+                base += f"\n留言：{comment}"
+            return base
+
         # 補一個合併所有文字的欄位（給 Prompt 用）- 使用篩選後最高的三筆
         formatted = "\n\n---\n\n".join(
-            f"Q：{match['metadata']['source']}\nA：{match['metadata']['content']}"
-            for match in top_three_matches
+            _format_match(match) for match in top_three_matches
         )
         # 來源文章標題
         sources = [match["metadata"]["source"] for match in top_three_matches]
         ids = [m["id"] for m in top_three_matches]
 
+        references = []
+        for match in top_three_matches:
+            metadata = match.get("metadata", {}) or {}
+            reference = {
+                "id": match.get("id"),
+                "source": metadata.get("source"),
+                "content": metadata.get("content"),
+            }
+            if metadata.get("comment"):
+                reference["comment"] = metadata.get("comment")
+            references.append(reference)
+        print("refrence", references)
         print(f"🔍 向量查詢結果數量: {len(filtered_matches)}")
         print(f"🔍 篩選後最高三筆數量: {len(top_three_matches)}")
         print("📊 向量查詢使用用量:", results.get("usage", {}))
@@ -77,12 +86,24 @@ def vector_search_light(user_input: str, top_k: int = 50) -> dict:
                 "metadata": match.get("metadata", {}),
             }
             serializable_matches.append(serializable_match)
+        print("🔍--------------------------------")
+        print(
+            {
+                "matches": serializable_matches,
+                "sources": sources,
+                "ids": ids,
+                "context_text": formatted,
+                "references": references,
+                "usage": results.get("usage", {}),
+            }
+        )
 
         return {
             "matches": serializable_matches,
             "sources": sources,
             "ids": ids,
             "context_text": formatted,  # ✅ 給 prompt 直接使用
+            "references": references,
             "usage": results.get("usage", {}),
         }
     except Exception as e:

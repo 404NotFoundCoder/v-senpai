@@ -22,14 +22,13 @@ V_SENPAI_SYSTEM_PROMPT = """
 請嚴格遵守以下規則：
 1. **資料為本，禁止猜測或捏造資訊。**  
    - 回答只能根據資料中出現的內容（例如：訪談、課程規劃等）但須符合使用者問題。  
-   - 若找不到答案，請說：「我找不到相關資料」，並鼓勵學生改問其他角度。  
+   - 若找不到答案，請說：「我找不到相關資料」，並鼓勵學生改問其他角度。但若屬通用知識則可補充，但必須先聲明「資料中未提及，以下為一般知識補充」。
 2. **問題模糊時，協助釐清再回答。**  
    - 若學生問題不清楚，請主動列出選項或追問，協助對方聚焦。  
 3. **回答方式要具體、真誠、有條理。**  
    - 舉例時請指出是來自「某位同學的經驗」。  
-   - 不要使用過於空泛的建議，例如「多努力」、「加油就好」這類無實質幫助的回答。  
-4. **以中文作答。**  
-   - 回答要口語、自然、簡潔明確。
+   - 可引用「某位同學的經驗」或「訪談內容」，避免空泛建議如「多努力」，這類無實質幫助的回答。  
+4. **以自然口語中文作答**，簡潔清晰，不過於冗長，讓使用者能夠清晰理解內容。
 """
 
 AI_DRAFT_SYSTEM_PROMPT = """
@@ -107,9 +106,10 @@ def get_openai_response(
         base_url=ENDPOINT,
         api_key=token,
     )
-
+    need_ref_list = False
     # 如果沒有提供 context_text，則重新搜尋
     if context_text is None:
+        need_ref_list = True
         search_result = vector_search_light(user_input, 3)
         context_text = search_result.get("context_text", "查無資料。")
 
@@ -133,7 +133,18 @@ def get_openai_response(
 
     print("AI回覆", response.choices[0].message.content)
     print("AI回覆使用的上下文資料:", context_text)
-    return {"answer": response.choices[0].message.content, "context": context_text}
+
+    return {
+        "answer": response.choices[0].message.content,
+        "context": context_text,
+        **(
+            {
+                "references": search_result.get("references", []),
+            }
+            if need_ref_list
+            else {}
+        ),
+    }
 
 
 def get_openai_draft_article(token: str, history: object, final_question: str) -> str:

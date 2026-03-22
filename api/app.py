@@ -1,10 +1,12 @@
 from dotenv import load_dotenv
+from firebase_admin import auth
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 load_dotenv()
 
 from api.delete import delete_from_pinecone
+from api.firebase_auth import verify_id_token_and_create_custom_token
 from api.llm_client import (
     get_openai_draft_article,
     get_openai_response,
@@ -89,7 +91,8 @@ def upload():
         "id": "唯一識別碼",
         "author": "作者名稱",
         "title": "文章標題(資料來源)",
-        "content": "要上傳的文本內容"
+        "content": "要上傳的文本內容",
+        "comment": "文章留言(可選)"
     }
     """
     try:
@@ -103,6 +106,7 @@ def upload():
 
         title = data.get("source")
         content = data.get("content")
+        comment = data.get("comment")
 
         if not all([id, title, content]):
             return (
@@ -116,9 +120,14 @@ def upload():
             )
 
         # 調用上傳函數
-        upload_to_pinecone(id, title, content)
+        upload_to_pinecone(id, title, content, comment=comment)
 
-        return jsonify({"message": "上傳成功", "id": id, "title": title}), 200
+        return (
+            jsonify(
+                {"message": "上傳成功", "id": id, "title": title, "comment": comment}
+            ),
+            200,
+        )
 
     except Exception as e:
         print(f"❌ 上傳 API 錯誤：{e}")
@@ -157,6 +166,41 @@ def delete():
     except Exception as e:
         print(f"❌ 刪除 API 錯誤：{e}")
         return jsonify({"error": "刪除失敗", "details": str(e)}), 500
+
+
+@app.route("/api/verify", methods=["POST"])
+def verify():
+    """
+    驗證前端傳來的 Firebase ID Token，並簽發 Custom Token。
+    Request JSON:
+    {
+        "idToken": "<firebase id token>"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "請提供 JSON 資料"}), 400
+
+        id_token = data.get("idToken")
+        if not id_token:
+            return jsonify({"error": "缺少必要欄位", "required": ["idToken"]}), 400
+
+        custom_token, uid = verify_id_token_and_create_custom_token(id_token)
+
+        return jsonify({"customToken": custom_token, "uid": uid}), 200
+
+    except auth.InvalidIdTokenError:
+        return jsonify({"error": "無效的 ID Token"}), 401
+    except auth.ExpiredIdTokenError:
+        return jsonify({"error": "ID Token 已過期"}), 401
+    except auth.RevokedIdTokenError:
+        return jsonify({"error": "ID Token 已被撤銷"}), 401
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 401
+    except Exception as e:
+        print(f"❌ verify API 錯誤：{e}")
+        return jsonify({"error": "驗證失敗", "details": str(e)}), 500
 
 
 if __name__ == "__main__":

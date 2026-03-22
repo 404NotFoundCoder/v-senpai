@@ -16,6 +16,9 @@ coverage
 .venv
 .env
 
+# Firebase Admin 本機金鑰（勿提交；Vercel 請用 FIREBASE_SERVICE_ACCOUNT_JSON）
+key.json
+
 /cypress/videos/
 /cypress/screenshots/
 

@@ -6,3 +6,4 @@ python-dotenv
 flask-cors
 pinecone
 google-genai
+firebase-admin
