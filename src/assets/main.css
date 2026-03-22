@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 全域繁中字型（與 Tailwind font-sans 一致，涵蓋非 Tailwind 區塊） */
+@layer base {
+  html {
+    font-family: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
 /* 隱藏 scrollbar，但允許滾動 */
 ::-webkit-scrollbar {
   display: none;
