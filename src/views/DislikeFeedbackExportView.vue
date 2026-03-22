@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-5xl mx-auto mt-[60px] py-10 sm:py-20 px-6">
+  <MainPageShell>
+  <div class="mx-auto max-w-5xl px-6 pb-10 pt-16 sm:py-20">
     <h1 class="text-2xl font-bold mb-6">👎 Dislike 反饋紀錄</h1>
 
     <div class="mb-6 flex justify-between items-center">
@@ -65,9 +66,11 @@
       </div>
     </div>
   </div>
+  </MainPageShell>
 </template>
 
 <script setup lang="ts">
+import MainPageShell from '@/components/layout/MainPageShell.vue'
 import { ref, onMounted } from 'vue'
 import { collection, getDocs, query, orderBy } from 'firebase/firestore'
 import { db } from '@/config/firebaseConfig'

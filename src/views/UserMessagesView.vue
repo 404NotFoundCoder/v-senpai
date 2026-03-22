@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-3xl mx-auto mt-[60px] py-10 sm:py-20 px-6">
+  <MainPageShell>
+  <div class="mx-auto max-w-3xl px-6 pb-10 pt-16 sm:py-20">
     <h1 class="text-2xl font-bold mb-6">🗂️ 使用者對話紀錄</h1>
     <div class="mb-6 flex justify-end">
       <button @click="exportToExcel" class="bg-green-500 text-white px-4 py-2 rounded">
@@ -33,9 +34,11 @@
       </div>
     </div>
   </div>
+  </MainPageShell>
 </template>
 
 <script setup lang="ts">
+import MainPageShell from '@/components/layout/MainPageShell.vue'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRoute } from 'vue-router'

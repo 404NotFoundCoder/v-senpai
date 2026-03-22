@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-5xl mx-auto mt-[150px] mb-10 y-10 text-gray-800">
+  <MainPageShell>
+  <div class="mx-auto mb-10 max-w-5xl pb-10 pt-36 text-gray-800">
     <h1 class="text-3xl font-bold text-center mb-4">🧪 使用者報名資料列表</h1>
     <p class="text-center text-gray-500 mb-6">目前共有 {{ signups.length }} 位報名者</p>
 
@@ -37,9 +38,11 @@
       </router-link>
     </div>
   </div>
+  </MainPageShell>
 </template>
 
 <script setup>
+import MainPageShell from '@/components/layout/MainPageShell.vue'
 import { ref, onMounted } from 'vue'
 import { collection, getDocs, getFirestore } from 'firebase/firestore'
 import { app } from '../config/firebaseConfig'

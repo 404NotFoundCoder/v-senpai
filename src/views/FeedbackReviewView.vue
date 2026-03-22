@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-4xl mx-auto mt-[150px] py-10 sm:py-20 px-4">
+  <MainPageShell>
+  <div class="mx-auto max-w-4xl px-4 pb-10 pt-36 sm:py-20">
     <h1 class="text-3xl font-bold text-center mb-8">📋 使用者回饋總覽</h1>
 
     <div v-if="loading" class="text-center text-gray-600">讀取中...</div>
@@ -36,9 +37,11 @@
       <hr class="mt-6 border-t border-gray-300" />
     </div>
   </div>
+  </MainPageShell>
 </template>
 
 <script setup lang="ts">
+import MainPageShell from '@/components/layout/MainPageShell.vue'
 import { onMounted, ref } from 'vue'
 import { db } from '@/config/firebaseConfig'
 import { collection, getDocs, Timestamp, deleteDoc, doc, orderBy, query } from 'firebase/firestore'

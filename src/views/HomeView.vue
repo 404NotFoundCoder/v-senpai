@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import MainPageShell from '@/components/layout/MainPageShell.vue'
 import TheWelcome from '../components/TheWelcome.vue'
 </script>
 
 <template>
-  <TheWelcome />
+  <MainPageShell>
+    <TheWelcome />
+  </MainPageShell>
 </template>
