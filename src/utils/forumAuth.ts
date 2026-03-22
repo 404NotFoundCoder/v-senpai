@@ -1,7 +1,7 @@
 import { getAuth, signInWithCustomToken } from 'firebase/auth'
 
 // const FORUM_ORIGIN = 'http://localhost:3000'
-const FORUM_ORIGIN = 'http://sa-forum.vercel.app'
+const FORUM_ORIGIN = 'https://sa-forum.vercel.app'
 // const VERIFY_ENDPOINT = 'http://localhost:5000/api/verify'
 const VERIFY_ENDPOINT = '/api/verify'
 

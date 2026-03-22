@@ -37,3 +37,12 @@ npm run build
 ```sh
 npm run lint
 ```
+
+## PWA（可安裝、離線殼層）
+
+使用 [vite-plugin-pwa](https://vite-pwa-org.netlify.app/)：`npm run build` 後會產生 `manifest.webmanifest`、`sw.js`，並自動註冊 Service Worker（`registerType: 'autoUpdate'`）。
+
+- **安裝**：部署到 **HTTPS**（如 Vercel）後，瀏覽器可「加入主畫面／安裝應用程式」。
+- **離線**：已快取的靜態資源可離線開啟；動態資料（Firebase 等）仍須連線。
+- **本機測 Service Worker**：在 `vite.config.ts` 將 `devOptions.enabled` 改為 `true` 後再 `npm run dev`（用完建議改回 `false`）。
+- **圖示**：使用 `public/logo.png`；若更換圖檔請維持路徑或一併更新 `manifest.icons`。

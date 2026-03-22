@@ -149,7 +149,7 @@ const props = defineProps<{
 }>()
 
 // const BASE_POST_URL = 'http://localhost:3000/post'
-const BASE_POST_URL = 'http://sa-forum.vercel.app/post'
+const BASE_POST_URL = 'https://sa-forum.vercel.app/post'
 const refLink = (id: string) => `${BASE_POST_URL}/${id}`
 
 async function openRefPost(id: string) {
