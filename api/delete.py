@@ -27,7 +27,7 @@ def delete_from_pinecone(id):
         # 初始化 Pinecone
         pc = Pinecone(api_key=pinecone_api_key)
 
-        index_name = "vec-test-1"
+        index_name = "vec-0601"
 
         # 檢查 index 是否存在
         if index_name not in pc.list_indexes().names():

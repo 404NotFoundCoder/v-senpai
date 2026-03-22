@@ -16,7 +16,7 @@ def vector_search_light(user_input: str, top_k: int = 50) -> dict:
     try:
         # 初始化 Pinecone
         pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-        index_name = "vec-test-1"
+        index_name = "vec-0601"
         index = pc.Index(index_name)
 
         # 取得向量

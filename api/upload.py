@@ -22,7 +22,7 @@ def upload_to_pinecone(id, title, content, comment=None):
     # 初始化 Pinecone
     pc = Pinecone(api_key=pinecone_api_key)
 
-    index_name = "vec-test-1"
+    index_name = "vec-0601"
 
     if index_name not in pc.list_indexes().names():
         print(f"⚙️ 建立新的 Pinecone index: {index_name} (serverless)...")

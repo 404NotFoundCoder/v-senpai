@@ -42,7 +42,9 @@ export async function buildForumUrl(
   }
 
   const idToken = await user.getIdToken()
+  console.log('token', idToken)
   const customToken = await exchangeToCustomToken(idToken)
+  console.log('token', customToken)
   // query key 使用 t（依需求），此處帶 customToken
   url.searchParams.set('t', customToken)
 
