@@ -1,5 +1,6 @@
 <template>
-  <div ref="chatContainer" class="mt-16 sm:mt-20 px-4 sm:px-6 lg:px-10 py-3 space-y-2 overflow-y-auto bg-gray-50 h-full">
+  <!-- 不在此層 overflow：捲動只發生在 ChatView .chat-scroll，避免 iOS 雙層捲動失效 -->
+  <div class="mt-16 space-y-2 bg-gray-50 px-4 py-3 pb-8 sm:mt-20 sm:px-6 lg:px-10">
     <ChatBubble
       v-for="(msg, index) in messages"
       :key="index"
@@ -22,10 +23,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
 import ChatBubble from '@/components/chat/ChatBubble.vue'
 
-const props = defineProps<{
+defineProps<{
   messages: {
     sender: string
     text: string
@@ -37,19 +37,6 @@ const props = defineProps<{
   }[]
   isThinking?: boolean
 }>()
-
-const chatContainer = ref<HTMLElement | null>(null)
-
-watch(
-  () => [props.messages, props.isThinking],
-  async () => {
-    await nextTick()
-    const el = chatContainer.value
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  },
-  { deep: true },
-)
 </script>
 
 <style scoped>

@@ -7,9 +7,24 @@
   html {
     font-family: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
   }
+  /* 高度鏈：否則 flex-1 聊天區會隨內容無限變高，輸入框被推到視窗外「不見」 */
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    min-height: 100dvh;
+    height: 100%;
+  }
 }
 
-/* 隱藏 scrollbar，但允許滾動 */
-::-webkit-scrollbar {
-  display: none;
+/* 僅在精細指標裝置隱藏捲軸，避免影響觸控捲動行為 */
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }

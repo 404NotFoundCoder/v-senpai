@@ -1,7 +1,8 @@
 <template>
-  <div class="flex flex-col h-screen">
-    <!-- 中間聊天訊息區 -->
-    <div class="flex-1 overflow-y-auto">
+  <!-- overflow-hidden：只限聊天欄高度；h-full 吃滿 Router 區，輸入框才會留在視窗內 -->
+  <div class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+    <!-- 只這一層捲動：避免與 ChatBox 雙層 overflow 在 iOS 上打架 -->
+    <div ref="chatScrollEl" class="chat-scroll flex-1 min-h-0 overflow-y-scroll">
       <ChatBox :messages="messages" :is-thinking="isThinking" />
     </div>
     <div class="suggested-slot">
@@ -49,8 +50,20 @@ import SuggestedQuestions from '../components/chat/SuggestedQuestions.vue'
 // 狀態
 const input = ref('')
 const inputRef = ref<HTMLTextAreaElement | null>(null)
+const chatScrollEl = ref<HTMLElement | null>(null)
 const isThinking = ref(false)
 const messages = ref([])
+
+watch(
+  () => [messages.value, isThinking.value],
+  async () => {
+    await nextTick()
+    const el = chatScrollEl.value
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  },
+  { deep: true },
+)
 
 const MIN_ROWS = 1
 /** 可視約 5 行，超出由 textarea 內部捲動 */
@@ -163,9 +176,26 @@ onAuthStateChanged(auth, (user) => {
   overflow: visible;
 }
 
+/* iOS 慣性捲動（舊版 Safari）；新裝置仍相容 */
+.chat-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .chat-scroll {
+    /* 僅 WebKit 觸控：避免捲動鏈到整頁 */
+    overscroll-behavior-y: contain;
+  }
+}
+
 .chat-input-area {
+  flex-shrink: 0;
   background: #fff;
   padding: 0.75rem 1rem;
+  /* 舊 iOS constant、新 iOS env，避免被 Home 指示列／瀏海區遮擋 */
+  padding-bottom: max(0.75rem, constant(safe-area-inset-bottom));
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.06);
 }
