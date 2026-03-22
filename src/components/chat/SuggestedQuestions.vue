@@ -329,19 +329,26 @@ const visibleGroups = computed<QuestionGroup[]>(() => {
   gap: 0.5rem;
 }
 
-/* 手機：改成水平滑動，避免高度被拉太高 */
+/* 手機：直向堆疊全寬，避免 nowrap 橫滑時 chip 被壓窄 → 一字一行跑版 */
 @media (max-width: 639px) {
   .suggested-questions {
+    flex-direction: column;
     flex-wrap: nowrap;
-    overflow-x: auto;
+    align-items: stretch;
+    overflow-x: visible;
+    overflow-y: auto;
+    max-height: min(52vh, 22rem);
     padding-bottom: 0.25rem;
     -webkit-overflow-scrolling: touch;
+    gap: 0.5rem;
   }
 
-  /* 手機：維持單行 chip，搭配外層水平滑動 */
   .suggested-chip {
-    white-space: nowrap;
-    text-align: center;
+    width: 100%;
+    flex: 0 0 auto;
+    white-space: normal;
+    text-align: left;
+    border-radius: 0.75rem;
   }
 }
 

@@ -17,13 +17,13 @@
         @select="handleSuggestedQuestion"
       />
     </div>
-    <!-- 輸入框區：Shift+Enter 換行、Enter 發送，RWD 響應式 -->
+    <!-- 輸入框：桌機 Enter 發送；手機 Enter 換行，僅按鈕送出 -->
     <div class="chat-input-area">
       <div class="chat-input-wrap">
         <textarea
           ref="inputRef"
           v-model="input"
-          placeholder="輸入訊息...（Shift+Enter 換行，Enter 發送）"
+          :placeholder="inputPlaceholder"
           rows="1"
           class="chat-input"
           @keydown="handleKeydown"
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import ChatBox from '../components/chat/ChatBox.vue'
 import { useChatService } from '@/composables/useChatService'
 import { watchFirestoreMessages } from '@/composables/services/chatFirestoreService'
@@ -53,23 +53,59 @@ const isThinking = ref(false)
 const messages = ref([])
 
 const MIN_ROWS = 1
-const MAX_ROWS = 6
-const LINE_HEIGHT = 24
+/** 可視約 5 行，超出由 textarea 內部捲動 */
+const MAX_ROWS = 5
+
+const isNarrowScreen = ref(false)
+function updateNarrowScreen() {
+  isNarrowScreen.value =
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+}
+
+const inputPlaceholder = computed(() =>
+  isNarrowScreen.value
+    ? '輸入訊息…（Enter 換行，按「發送」送出）'
+    : '輸入訊息…（Shift+Enter 換行，Enter 發送）',
+)
+
+function getTextareaLineMetrics(el: HTMLTextAreaElement) {
+  const cs = getComputedStyle(el)
+  let lineHeight = parseFloat(cs.lineHeight)
+  if (Number.isNaN(lineHeight) || lineHeight <= 0) {
+    const fs = parseFloat(cs.fontSize) || 16
+    lineHeight = fs * 1.5
+  }
+  const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
+  const borderY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0)
+  return { lineHeight, padY, borderY }
+}
 
 function autoResize() {
   nextTick(() => {
     const el = inputRef.value
     if (!el) return
-    if (!el.value.trim()) {
-      el.style.height = `${MIN_ROWS * LINE_HEIGHT}px`
+    const { lineHeight, padY, borderY } = getTextareaLineMetrics(el)
+    const minH = Math.ceil(lineHeight * MIN_ROWS + padY + borderY)
+    const maxH = Math.ceil(lineHeight * MAX_ROWS + padY + borderY)
+
+    if (!el.value) {
+      el.style.height = `${minH}px`
+      el.style.overflowY = 'hidden'
       return
     }
     el.style.height = 'auto'
-    const minH = MIN_ROWS * LINE_HEIGHT
-    const maxH = MAX_ROWS * LINE_HEIGHT
-    el.style.height = `${Math.min(maxH, Math.max(minH, el.scrollHeight))}px`
+    const next = Math.min(maxH, Math.max(minH, el.scrollHeight))
+    el.style.height = `${next}px`
+    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden'
   })
 }
+
+// 注入主邏輯（需在 handleKeydown 前宣告 sendMessage）
+const { sendMessage, readUserData, handleSuggestedQuestion } = useChatService(
+  messages,
+  input,
+  isThinking,
+)
 
 // 傳送後 input 被清空時，程式不會觸發 @input，需用 watch 強制重置為單行高度
 watch(input, (val) => {
@@ -77,18 +113,23 @@ watch(input, (val) => {
 })
 
 function handleKeydown(e: KeyboardEvent) {
+  // 手機／窄螢幕：Enter = 換行，僅按「發送」送出
+  if (isNarrowScreen.value) return
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     sendMessage()
   }
 }
 
-// 注入主邏輯
-const { sendMessage, readUserData, handleSuggestedQuestion } = useChatService(
-  messages,
-  input,
-  isThinking,
-)
+onMounted(() => {
+  updateNarrowScreen()
+  window.addEventListener('resize', updateNarrowScreen)
+  nextTick(() => autoResize())
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateNarrowScreen)
+})
 
 // 預設訊息
 const defaultMessage = {
@@ -97,7 +138,7 @@ const defaultMessage = {
     '👋 嗨～我是你的學長姊模擬助理 V-Senpai！\n' +
     '我整理了歷屆學長姊在「系統分析與設計」課程中的經驗與建議，\n' +
     '不管是選題、合作、技術、還是報告準備，你都可以問我唷～\n' +
-    '如果不知道從哪裡開始，也可以點選下方的引導問題來試試看 👇',
+    '如果不知道從哪裡開始，也可以點選右下方的建議(✨)問題來試試看 👇',
   createdAt: new Date().toISOString(),
   metadata: '這是開場訊息',
   docid: 'init-msg',
@@ -140,7 +181,8 @@ onAuthStateChanged(auth, (user) => {
   flex: 1;
   min-width: 0;
   min-height: 2.5rem;
-  max-height: 9rem;
+  /* 約 5 行可視，與 script MAX_ROWS 一致；超出由 overflow-y 捲動 */
+  max-height: calc(1.5em * 5 + 1rem);
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;

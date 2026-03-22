@@ -12,7 +12,9 @@
         <div class="chat-markdown" v-html="renderedText"></div>
       </div>
 
-      <span class="text-xs text-gray-400 mt-1" v-if="formattedTimestamp">{{ formattedTimestamp }}</span>
+      <span class="text-xs text-gray-400 mt-1" v-if="formattedTimestamp">{{
+        formattedTimestamp
+      }}</span>
 
       <!-- 回饋區塊（僅非自己訊息顯示） -->
       <div v-if="!isSelf" class="mt-2">
@@ -23,7 +25,7 @@
               class="text-xs text-primary-800 bg-primary-200 hover:bg-primary-100 transition rounded-full px-3 py-1 shadow-sm"
               @click="showMetadataDialog = true"
             >
-              原文
+              參考資料
             </button>
 
             <button
@@ -61,16 +63,12 @@
   <!-- 原文 / References Dialog -->
   <div v-if="showMetadataDialog" class="reference-overlay" @click.self="showMetadataDialog = false">
     <div class="reference-dialog">
-      <h2 class="reference-title">參考原文</h2>
+      <h2 class="reference-title">參考資料</h2>
 
       <div class="reference-body">
         <template v-if="referencesList.length">
           <div v-for="(ref, i) in referencesList" :key="ref.id + String(i)" class="reference-item">
-            <a
-              :href="refLink(ref.id)"
-              class="reference-link"
-              @click.prevent="openRefPost(ref.id)"
-            >
+            <a :href="refLink(ref.id)" class="reference-link" @click.prevent="openRefPost(ref.id)">
               <span class="reference-link-emoji" aria-hidden="true">🔗</span>
               <span class="reference-link-text">{{ ref.source || '（無標題）' }}</span>
             </a>
@@ -79,7 +77,9 @@
         </template>
 
         <template v-else>
-          <pre class="reference-fallback">{{ props.metadata || '（無原文說明）' }}</pre>
+          <pre class="reference-fallback">{{
+            props.metadata || '（無參考資料，可使用不滿意論壇求助功能）'
+          }}</pre>
         </template>
       </div>
 
@@ -102,9 +102,7 @@
             <button type="button" class="btn-generate" @click="handleGenerateDraft">
               要，幫我生成
             </button>
-            <button type="button" class="btn-skip" @click="handleSkipDraft">
-              不用了
-            </button>
+            <button type="button" class="btn-skip" @click="handleSkipDraft">不用了</button>
           </div>
         </div>
       </div>
@@ -363,9 +361,15 @@ async function callDraftAPI() {
   font-weight: 700;
   line-height: 1.3;
 }
-.chat-markdown :deep(h1) { font-size: 1.1em; }
-.chat-markdown :deep(h2) { font-size: 1.05em; }
-.chat-markdown :deep(h3) { font-size: 1em; }
+.chat-markdown :deep(h1) {
+  font-size: 1.1em;
+}
+.chat-markdown :deep(h2) {
+  font-size: 1.05em;
+}
+.chat-markdown :deep(h3) {
+  font-size: 1em;
+}
 .chat-markdown :deep(ul),
 .chat-markdown :deep(ol) {
   margin: 0.5em 0;
@@ -568,7 +572,9 @@ async function callDraftAPI() {
   padding: 1.5rem 1.75rem;
   max-width: 20rem;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(63, 40, 37, 0.15), 0 0 0 1px rgba(201, 146, 136, 0.2);
+  box-shadow:
+    0 20px 40px rgba(63, 40, 37, 0.15),
+    0 0 0 1px rgba(201, 146, 136, 0.2);
 }
 .dislike-followup-text {
   font-size: 1rem;
@@ -592,28 +598,30 @@ async function callDraftAPI() {
   font-size: 0.9375rem;
   font-weight: 600;
   color: #fff;
-  background: #A76F65;
+  background: #a76f65;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background 0.2s;
 }
 .btn-generate:hover {
-  background: #87564D;
+  background: #87564d;
 }
 .btn-skip {
   padding: 0.6rem 1rem;
   font-size: 0.9375rem;
   font-weight: 500;
   color: #654039;
-  background: #FBECDC;
+  background: #fbecdc;
   border: 1px solid rgba(201, 146, 136, 0.4);
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 .btn-skip:hover {
-  background: #F9D8C1;
+  background: #f9d8c1;
 }
 
 /* 生成草稿 Loading 遮罩 */
@@ -636,8 +644,8 @@ async function callDraftAPI() {
 .draft-loading-spinner {
   width: 2.5rem;
   height: 2.5rem;
-  border: 3px solid #FBECDC;
-  border-top-color: #A76F65;
+  border: 3px solid #fbecdc;
+  border-top-color: #a76f65;
   border-radius: 50%;
   animation: draft-spin 0.8s linear infinite;
 }
