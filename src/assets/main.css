@@ -7,7 +7,7 @@
   html {
     font-family: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
   }
-  /* 高度鏈：否則 flex-1 聊天區會隨內容無限變高，輸入框被推到視窗外「不見」 */
+  /* 整頁 flex 柱：footer 貼視窗底；長頁內容在 App 中間層 overflow-y-auto 捲動 */
   html,
   body {
     height: 100%;
@@ -16,7 +16,7 @@
   #app {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    min-height: 100vh;
     min-height: 100dvh;
     height: 100%;
   }

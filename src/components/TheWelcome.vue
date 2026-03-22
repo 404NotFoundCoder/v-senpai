@@ -1,6 +1,7 @@
 <template>
+  <!-- 勿用 min-h-screen：會多撐 100vh 導致整頁可捲、footer 像浮起。改填滿主內容區並置中 -->
   <div
-    class="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#fdfefe] to-[#f5f7fa] sm:px-6 py-10 text-gray-800"
+    class="flex min-h-0 flex-1 flex-col items-center justify-center bg-gradient-to-br from-[#fdfefe] to-[#f5f7fa] px-4 py-10 text-gray-800 sm:px-6"
   >
     <div class="text-center w-full max-w-xl p-10">
       <h1 class="text-3xl sm:text-4xl font-extrabold mb-4 leading-snug">
