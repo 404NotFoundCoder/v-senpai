@@ -2,7 +2,6 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -66,6 +65,7 @@ export const watchFirestoreMessages = (
 
   onSnapshot(q, (snapshot) => {
     const loadedMessages: ChatMessage[] = []
+    const rollingPairs: Array<{ user: string; ai: string; metadata: string }> = []
     snapshot.forEach((docSnap) => {
       const data = docSnap.data() as {
         messagePairs: ChatPair[]
@@ -82,14 +82,26 @@ export const watchFirestoreMessages = (
           text: pair.user,
           createdAt: timestamp,
         })
+        const chatHistory = rollingPairs.slice(Math.max(0, rollingPairs.length - 3)).map((item) => ({
+          aiText: item.ai,
+          userText: item.user,
+          metadata: item.metadata || '',
+        }))
         loadedMessages.push({
           docid: docSnap.id,
           sender: 'ai',
           text: pair.ai,
           createdAt: timestamp,
+          userText: pair.user,
           metadata: pair.metadata,
           references: Array.isArray(pair.references) ? pair.references : undefined,
           feedback: data.feedback ?? undefined,
+          chatHistory,
+        })
+        rollingPairs.push({
+          user: pair.user,
+          ai: pair.ai,
+          metadata: pair.metadata ?? '',
         })
       })
     })
@@ -105,6 +117,12 @@ export async function updateMessageFeedback(
   userId: string,
   messageId: string,
   type: 'like' | 'dislike',
+  context?: {
+    userText?: string
+    aiText?: string
+    metadata?: string
+    chatHistory?: Array<{ aiText: string; userText: string; metadata: string }>
+  },
 ): Promise<void> {
   // 1. 保存到用户自己的collection（原有功能）
   const messageRef = doc(db, `users/${userId}/conversation-${type}/${messageId}`)
@@ -115,32 +133,71 @@ export async function updateMessageFeedback(
 
   // 2. 從 Firestore 讀取完整對話資訊並保存到公共 collection
   try {
-    const conversationRef = doc(db, `users/${userId}/conversation-0610`, messageId)
-    const conversationSnap = await getDoc(conversationRef)
+    if (context?.userText && context?.aiText) {
+      const collectionName = `public-feedback-${type}`
+      const feedbackRef = doc(db, collectionName, messageId)
+      await setDoc(feedbackRef, {
+        uid: userId,
+        aiText: context.aiText,
+        userText: context.userText,
+        metadata: context.metadata || '',
+        chatHistory: Array.isArray(context.chatHistory) ? context.chatHistory.slice(-3) : [],
+        createdAt: serverTimestamp(),
+      })
+      console.log(`✅ 回饋已保存到公共 collection: public-feedback-${type}/${messageId}`)
+      return
+    }
 
-    if (conversationSnap.exists()) {
-      const data = conversationSnap.data()
-      const messagePairs = data.messagePairs || []
+    // fallback：若前端未帶 context，才從 Firestore 補查
+    const convoRef = collection(db, `users/${userId}/conversation-0610`)
+    const q = query(convoRef, orderBy('createdAt', 'asc'))
+    const snapshot = await getDocs(q)
 
-      // 遍歷所有對話對，保存到公共 collection
-      // 路徑: public-feedback-like/${messageId} 或 public-feedback-dislike/${messageId}
-      for (const pair of messagePairs) {
-        if (pair.user && pair.ai) {
-          const collectionName = `public-feedback-${type}` // 'public-feedback-like' 或 'public-feedback-dislike'
-          const feedbackRef = doc(db, collectionName, messageId)
-          await setDoc(feedbackRef, {
-            uid: userId,
-            aiText: pair.ai,
-            userText: pair.user,
+    const allPairs: Array<{ docId: string; user: string; ai: string; metadata: string }> = []
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data()
+      const messagePairs = Array.isArray(data.messagePairs) ? data.messagePairs : []
+
+      messagePairs.forEach((pair: any) => {
+        if (pair?.user && pair?.ai) {
+          allPairs.push({
+            docId: docSnap.id,
+            user: pair.user,
+            ai: pair.ai,
             metadata: pair.metadata || '',
-            createdAt: serverTimestamp(),
           })
         }
-      }
-      console.log(`✅ 回饋已保存到公共 collection: public-feedback-${type}/${messageId}`)
-    } else {
-      console.warn('⚠️ 找不到對話紀錄:', messageId)
+      })
+    })
+
+    const currentIndex = allPairs.findIndex((pair) => pair.docId === messageId)
+    if (currentIndex === -1) {
+      console.warn('⚠️ 找不到對應回饋的對話紀錄:', messageId)
+      return
     }
+
+    const currentPair = allPairs[currentIndex]
+    const chatHistory = allPairs
+      .slice(Math.max(0, currentIndex - 3), currentIndex)
+      .map((pair) => ({
+        aiText: pair.ai,
+        userText: pair.user,
+        metadata: pair.metadata || '',
+      }))
+
+    const collectionName = `public-feedback-${type}`
+    const feedbackRef = doc(db, collectionName, messageId)
+    await setDoc(feedbackRef, {
+      uid: userId,
+      aiText: currentPair.ai,
+      userText: currentPair.user,
+      metadata: currentPair.metadata || '',
+      chatHistory,
+      createdAt: serverTimestamp(),
+    })
+
+      console.log(`✅ 回饋已保存到公共 collection: public-feedback-${type}/${messageId}`)
   } catch (error) {
     console.error('❌ 保存回饋到公共 collection 失敗:', error)
     // 不拋出錯誤，因為使用者自己的回饋已經保存成功

@@ -13,6 +13,12 @@ export interface ChatMessage {
   references?: Reference[]
   docid?: string
   feedback?: string
+  userText?: string
+  chatHistory?: Array<{
+    aiText: string
+    userText: string
+    metadata: string
+  }>
 }
 
 export interface ChatPair {

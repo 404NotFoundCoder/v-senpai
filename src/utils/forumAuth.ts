@@ -1,12 +1,8 @@
 import { getAuth, signInWithCustomToken } from 'firebase/auth'
-
-// const FORUM_ORIGIN = 'http://localhost:3000'
-const FORUM_ORIGIN = 'https://sa-forum.vercel.app'
-// const VERIFY_ENDPOINT = 'http://localhost:5000/api/verify'
-const VERIFY_ENDPOINT = '/api/verify'
+import { FORUM_ORIGIN, VERIFY_API_URL } from '@/config/envEndpoints'
 
 async function exchangeToCustomToken(idToken: string): Promise<string> {
-  const response = await fetch(VERIFY_ENDPOINT, {
+  const response = await fetch(VERIFY_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken }),

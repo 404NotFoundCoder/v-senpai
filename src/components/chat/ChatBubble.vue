@@ -125,6 +125,7 @@
 <script setup lang="ts">
 import { useFeedback } from '@/composables/useFeedback'
 import { useToast } from '@/composables/useToast'
+import { DRAFT_API_URL, FORUM_ORIGIN } from '@/config/envEndpoints'
 import { formatChatTimestamp } from '@/utils/dateTime'
 import { buildForumUrl, goForum } from '@/utils/forumAuth'
 import { getAuth } from 'firebase/auth'
@@ -146,10 +147,11 @@ const props = defineProps<{
   metadata?: string
   references?: ReferenceItem[]
   docid?: string
+  userText?: string
+  chatHistory?: Array<{ aiText: string; userText: string; metadata: string }>
 }>()
 
-// const BASE_POST_URL = 'http://localhost:3000/post'
-const BASE_POST_URL = 'https://sa-forum.vercel.app/post'
+const BASE_POST_URL = `${FORUM_ORIGIN}/post`
 const refLink = (id: string) => `${BASE_POST_URL}/${id}`
 
 async function openRefPost(id: string) {
@@ -189,7 +191,12 @@ const isDraftLoading = ref(false)
 async function sendFeedback(type: 'like' | 'dislike') {
   if (!props.docid || !userId) return
 
-  giveFeedback(userId, props.docid, type)
+  await giveFeedback(userId, props.docid, type, {
+    userText: props.userText,
+    aiText: props.text,
+    metadata: props.metadata,
+    chatHistory: props.chatHistory || [],
+  })
 
   if (type === 'like') {
     showToast('感謝你的讚！我們會持續努力！')
@@ -288,8 +295,7 @@ async function callDraftAPI() {
     }
 
     // 呼叫 draft API
-    // const response = await fetch('http://localhost:5000/api/draft', {
-    const response = await fetch('/api/draft', {
+    const response = await fetch(DRAFT_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -5,6 +5,7 @@ import type { ChatMessage, ChatPair } from './services/types'
 import { fetchChatHistory } from './services/chatHistoryService'
 import { saveConversationToFirestore } from './services/chatFirestoreService'
 import { readUserAccessToken } from './services/userService'
+import { CHAT_API_URL } from '@/config/envEndpoints'
 
 export function useChatService(
   messages: Ref<ChatMessage[]>,
@@ -34,9 +35,7 @@ export function useChatService(
       if (!history || history.length === 0) {
         console.warn('⚠️ 沒有找到歷史對話，將使用空陣列')
       }
-      //deploy
-      const response = await fetch(`/api/chat`, {
-        // const response = await fetch(`http://localhost:5000/api/chat`, {
+      const response = await fetch(CHAT_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

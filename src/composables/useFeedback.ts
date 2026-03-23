@@ -10,9 +10,19 @@ export function useFeedback() {
     showFeedback.value = !showFeedback.value
   }
 
-  const giveFeedback = async (userId: string, messageId: string, type: 'like' | 'dislike') => {
+  const giveFeedback = async (
+    userId: string,
+    messageId: string,
+    type: 'like' | 'dislike',
+    context?: {
+      userText?: string
+      aiText?: string
+      metadata?: string
+      chatHistory?: Array<{ aiText: string; userText: string; metadata: string }>
+    },
+  ) => {
     try {
-      await updateMessageFeedback(userId, messageId, type)
+      await updateMessageFeedback(userId, messageId, type, context)
       feedbackGiven.value = true
       showFeedback.value = false
     } catch (error) {

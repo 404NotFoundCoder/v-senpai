@@ -10,6 +10,8 @@
       :metadata="msg.metadata"
       :references="msg.references"
       :docid="msg.docid"
+      :user-text="msg.userText"
+      :chat-history="msg.chatHistory"
     />
     <!-- 等待回覆時的動態指示 -->
     <div v-if="isThinking" class="flex justify-start my-5">
@@ -34,6 +36,8 @@ defineProps<{
     references?: { id: string; source: string; content: string }[]
     docid?: string
     feedback?: string
+    userText?: string
+    chatHistory?: { aiText: string; userText: string; metadata: string }[]
   }[]
   isThinking?: boolean
 }>()
