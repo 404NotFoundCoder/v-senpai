@@ -136,13 +136,13 @@ const auth = getAuth()
 const { user, signInWithGitHub, logout } = useAuth()
 const { showToast } = useToast()
 
-function handleAuth() {
+async function handleAuth() {
   if (user.value) {
-    logout()
+    await logout()
     console.log('登出')
   } else {
-    signInWithGitHub()
-    console.log('GitHub 登入')
+    await signInWithGitHub()
+    console.log('GitHub 已登入')
   }
 }
 

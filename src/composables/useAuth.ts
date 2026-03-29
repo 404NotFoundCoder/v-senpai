@@ -37,9 +37,10 @@ export function useAuth() {
       }
 
       user.value = userInfo
-      console.log('User 已登入:', user.value)
     } catch (error: any) {
       console.error('🔥 原始錯誤:', error)
+
+      const pendingCredential = error?.customData?.credential || error?.credential
 
       if (error?.code) {
         console.error('錯誤碼:', error.code)
@@ -47,6 +48,12 @@ export function useAuth() {
 
       if (error?.message) {
         console.error('錯誤訊息:', error.message)
+      }
+
+      if (pendingCredential) {
+        console.log('🔥 抓到 pendingCredential:', pendingCredential)
+      } else {
+        console.warn('⚠️ 沒抓到 credential')
       }
     }
   }
