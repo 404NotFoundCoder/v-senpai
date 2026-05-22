@@ -40,12 +40,14 @@ def upload_to_pinecone(id, title, content, comment=None):
     if comment is not None and str(comment).strip() == "":
         comment = None
 
-    print(
-        f"🔍 正在處理 ID: {id}，文本內容: {content}"
-        + (f"，留言: {comment}" if comment else "")
+    embed_text = (
+        f"標題:{title}\n內文:{content}\n{comment}"
+        if comment
+        else f"標題:{title}\n內文:{content}"
     )
+    print(f"🔍 處理 ID: {id}，標題: {title}" + ("（含留言）" if comment else ""))
 
-    embedding = cohere_embed_with_fallback(content, input_type="search_document")
+    embedding = cohere_embed_with_fallback(embed_text, input_type="search_document")
 
     vectors.append(
         {
