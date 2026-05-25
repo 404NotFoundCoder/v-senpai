@@ -143,6 +143,14 @@ issues 欄位請根據文章問題選擇，可使用：
 - 若 status 是 rejected 或 review_manually，problematic_quote 請填入最主要有疑慮的片段；若無明確片段，請回傳空字串。
 - reason 請簡短說明判斷原因，不要太長。
 
+user_message 欄位規則：
+- 只有當 status 是 rejected 時，user_message 才需要填寫。
+- rejected 的 user_message 請用溫和、清楚、不羞辱使用者的語氣，說明文章未通過的原因。
+- 不要只寫「文章不符合規範」。
+- 要簡短指出主要問題，例如：文章包含人身攻擊、隱私資訊、威脅、廣告或與論壇無關內容。
+- 可以提醒使用者修改後再重新投稿。
+- 若 status 是 approved 或 review_manually，user_message 請回傳空字串 ""。
+
 請只回傳符合 schema 的 JSON，不要輸出任何多餘說明。
 """
 
@@ -158,7 +166,11 @@ ARTICLE_REVIEW_SCHEMA = {
             },
             "reason": {
                 "type": "string",
-                "description": "簡短說明審核原因，給管理員或使用者參考",
+                "description": "給管理員看的簡短審核原因",
+            },
+            "user_message": {
+                "type": "string",
+                "description": "只有 status 為 rejected 時才填寫給發文者看的拒絕原因；其他狀態請回傳空字串",
             },
             "issues": {
                 "type": "array",
@@ -184,7 +196,13 @@ ARTICLE_REVIEW_SCHEMA = {
                 "description": "最主要有問題的片段；若沒有則回傳空字串",
             },
         },
-        "required": ["status", "reason", "issues", "problematic_quote"],
+        "required": [
+            "status",
+            "reason",
+            "user_message",
+            "issues",
+            "problematic_quote",
+        ],
         "additionalProperties": False,
     },
 }
