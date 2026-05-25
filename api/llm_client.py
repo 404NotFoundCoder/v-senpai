@@ -71,6 +71,123 @@ Output strictly in valid JSON with the following structure:
 Do not include any explanation.
 Only output valid JSON.
 """
+ARTICLE_REVIEW_SYSTEM_PROMPT = """
+你是一個輔仁大學資管系「系統分析與設計 SA 課程論壇」的文章審核助手。
+
+你的任務是根據學生投稿的論壇文章 title 和 content，判斷該文章是否適合公開給其他學生觀看。
+
+論壇用途：
+- 分享 SA 課程、小專題、系統開發、文件撰寫、團隊合作與課程經驗等內容。
+- 學生可以提出問題、抱怨、分享困難或表達負面感受。
+- 但文章仍須維持基本尊重，不應包含人身攻擊、惡意造謠、隱私外洩、威脅、歧視、色情、灌水或明顯無關內容。
+
+請根據文章標題和內容回傳以下其中一種 status：
+
+1. approved
+文章可以公開。
+適用情況：
+- 正常提問。
+- 分享 SA 課程或小專題經驗。
+- 抱怨課程困難、文件很多、組員不配合、壓力大，但沒有攻擊特定個人。
+- 批評課程安排、系統開發流程或團隊合作問題，但語氣仍可接受。
+- 內容雖有負面情緒，但主要是在描述學習困難或尋求協助。
+- 沒有明顯人身攻擊、隱私外洩、威脅、歧視、色情、灌水或嚴重誤導資訊。
+
+2. rejected
+文章明顯不適合公開。
+適用情況：
+- 亂碼、灌水、廣告、惡作劇，或完全與 SA 課程論壇無關。
+- 惡意辱罵、霸凌、羞辱或攻擊特定老師、助教、同學、組員。
+- 攻擊他人的人格、外貌、能力、背景，而不是批評具體事件。
+- 鼓吹集體攻擊、騷擾、報復或其他惡意行為。
+- 公開他人隱私資訊，例如學號、電話、Email、住址、私人對話內容等。
+- 包含威脅、暴力、仇恨、歧視、色情或明顯不適合學生論壇公開的內容。
+- 散布嚴重錯誤資訊，且可能明顯誤導其他學生。
+- 內容明顯是來亂、無意義或惡意破壞論壇品質。
+
+3. review_manually
+AI 無法可靠判斷，或文章需要管理員根據課程實際情況確認。
+適用情況：
+- 文章可能需要修改，但不確定是否應拒絕。
+- 語氣偏激、情緒強烈，但是否構成人身攻擊需要人工判斷。
+- 有影射特定對象，但沒有明確姓名或上下文不足。
+- 文章提到具體課程規定、評分方式、作業要求、繳交期限，但無法確認是否正確。
+- 文章內容模糊，無法判斷是否為惡意、造謠或正常抱怨。
+- 文章可能涉及真實糾紛，需要人工判斷。
+- 文章看似有問題，但缺乏足夠上下文。
+- 文章沒有嚴重到 rejected，但也不適合讓 AI 直接 approved。
+- AI 無法明確判斷應該通過或拒絕時。
+
+issues 欄位請根據文章問題選擇，可使用：
+- spam_or_irrelevant：灌水、廣告、亂碼、明顯無關內容
+- misleading_information：可能誤導學生的課程資訊、規定、評分或期限
+- personal_attack：人身攻擊、羞辱、霸凌、針對特定個人
+- privacy_issue：公開不適合公開的個人資訊
+- extreme_or_inflammatory：過激、煽動、鼓吹惡意行為
+- hate_or_discrimination：仇恨或歧視內容
+- threat_or_violence：威脅或暴力內容
+- sexual_content：色情或不適合學生論壇的性內容
+- unclear：內容模糊、上下文不足，無法可靠判斷
+- none：沒有明顯問題
+
+審核原則：
+- 不要因為文章有負面情緒就拒絕。
+- 學生可以抱怨課程很難、組員不配合、文件很多、壓力大。
+- 批評事情可以接受，但攻擊人不可接受。
+- 只有在文章明顯安全且適合公開時，才使用 approved。
+- 只有在文章明顯不適合公開時，才使用 rejected。
+- 只要文章可能需要修改、語氣需要人工判斷、資訊真假無法確認、或上下文不足，請使用 review_manually。
+- 若無法判斷真假、嚴重程度或是否適合公開，請使用 review_manually。
+- 若文章沒有明顯問題，請使用 approved，issues 填入 ["none"]。
+- 若 status 是 approved，problematic_quote 請回傳空字串。
+- 若 status 是 rejected 或 review_manually，problematic_quote 請填入最主要有疑慮的片段；若無明確片段，請回傳空字串。
+- reason 請簡短說明判斷原因，不要太長。
+
+請只回傳符合 schema 的 JSON，不要輸出任何多餘說明。
+"""
+
+ARTICLE_REVIEW_SCHEMA = {
+    "name": "article_review_result",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["approved", "rejected", "review_manually"],
+                "description": "文章審核結果",
+            },
+            "reason": {
+                "type": "string",
+                "description": "簡短說明審核原因，給管理員或使用者參考",
+            },
+            "issues": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": [
+                        "spam_or_irrelevant",
+                        "misleading_information",
+                        "personal_attack",
+                        "privacy_issue",
+                        "extreme_or_inflammatory",
+                        "hate_or_discrimination",
+                        "threat_or_violence",
+                        "sexual_content",
+                        "unclear",
+                        "none",
+                    ],
+                },
+                "description": "文章可能存在的問題；若沒有問題則填 none",
+            },
+            "problematic_quote": {
+                "type": "string",
+                "description": "最主要有問題的片段；若沒有則回傳空字串",
+            },
+        },
+        "required": ["status", "reason", "issues", "problematic_quote"],
+        "additionalProperties": False,
+    },
+}
 
 
 def format_history_for_chat(history: List[Dict[str, str]]) -> List[Dict[str, str]]:
@@ -179,3 +296,55 @@ def get_openai_draft_article(token: str, history: object, final_question: str) -
     return {
         "draft": response.choices[0].message.content,
     }
+
+
+import json
+from openai import OpenAI
+
+
+def review_forum_article(token: str, title: str, content: str) -> dict:
+    client = OpenAI(
+        base_url=ENDPOINT,
+        api_key=token,
+    )
+
+    messages = [
+        {
+            "role": "system",
+            "content": ARTICLE_REVIEW_SYSTEM_PROMPT,
+        },
+        {
+            "role": "user",
+            "content": f"""
+請審核以下 SA 課程論壇文章。
+
+【標題】
+{title}
+
+【內容】
+{content}
+""",
+        },
+    ]
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        temperature=0,
+        response_format={
+            "type": "json_schema",
+            "json_schema": ARTICLE_REVIEW_SCHEMA,
+        },
+    )
+
+    result_text = response.choices[0].message.content
+
+    try:
+        return json.loads(result_text)
+    except json.JSONDecodeError:
+        return {
+            "status": "review_manually",
+            "reason": "AI 回傳格式無法解析，建議交由管理員人工審核。",
+            "issues": ["unclear"],
+            "problematic_quote": "",
+        }

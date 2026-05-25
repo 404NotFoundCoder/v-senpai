@@ -11,6 +11,7 @@ from api.llm_client import (
     get_openai_draft_article,
     get_openai_response,
     get_vector_search_result,
+    review_forum_article,
 )
 from api.upload import upload_to_pinecone
 
@@ -78,6 +79,45 @@ def draft():
     history = data.get("history", [])
 
     result = get_openai_draft_article(access_token, history, user_input)
+
+    return jsonify(result), 200
+
+
+@app.route("/api/review-article", methods=["POST"])
+def review_article():
+    data = request.get_json()
+
+    title = data.get("title", "")
+    content = data.get("content", "")
+    access_token = data.get("accessToken")
+
+    if not access_token:
+        return (
+            jsonify(
+                {
+                    "status": "review_manually",
+                    "reason": "缺少 accessToken，無法進行 AI 審核。",
+                    "issues": ["unclear"],
+                    "problematic_quote": "",
+                }
+            ),
+            400,
+        )
+
+    if not title.strip() and not content.strip():
+        return (
+            jsonify(
+                {
+                    "status": "rejected",
+                    "reason": "文章標題與內容皆為空，無法發布。",
+                    "issues": ["spam_or_irrelevant"],
+                    "problematic_quote": "",
+                }
+            ),
+            400,
+        )
+
+    result = review_forum_article(token=access_token, title=title, content=content)
 
     return jsonify(result), 200
 
