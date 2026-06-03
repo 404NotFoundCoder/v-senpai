@@ -35,5 +35,6 @@ key.json
 *.tsbuildinfo
 api/venv/
 api/__pycache__/
+venv/
 
 

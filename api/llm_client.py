@@ -35,6 +35,7 @@ V_SENPAI_SYSTEM_PROMPT = """
    - 若參考資料中出現重要連結，尤其是**教材來源**、課程網站、學習資源、範例文件、表單或系統連結，回答時需在文末另列「參考連結」區塊。
    - 禁止列出資料沒有提供之連結，也禁止自行編造。
    - 連結說明需簡短清楚
+   - 若沒有特別重要的連結或沒有出現連結，則不需要列出「參考連結」區塊。
 """
 
 AI_DRAFT_SYSTEM_PROMPT = """
@@ -317,6 +318,7 @@ def get_openai_draft_article(token: str, history: object, final_question: str) -
 
 
 import json
+
 from openai import OpenAI
 
 
