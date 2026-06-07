@@ -214,28 +214,39 @@ export async function updateMessageFeedback(
   }
 }
 
+export async function updateFeedbackDetail(
+  userId: string,
+  messageId: string,
+  type: 'like' | 'dislike',
+  note: string,
+): Promise<void> {
+  const trimmedNote = note.trim()
+  const noteField = type === 'like' ? 'likeNote' : 'dislikeNote'
+  const updatedAtField = type === 'like' ? 'likeNoteUpdatedAt' : 'dislikeNoteUpdatedAt'
+
+  await setDoc(
+    doc(db, `users/${userId}/conversation-${type}/${messageId}`),
+    {
+      [noteField]: trimmedNote,
+      [updatedAtField]: serverTimestamp(),
+    },
+    { merge: true },
+  )
+
+  await setDoc(
+    doc(db, `public-feedback-${type}`, messageId),
+    {
+      [noteField]: trimmedNote,
+      [updatedAtField]: serverTimestamp(),
+    },
+    { merge: true },
+  )
+}
+
 export async function updateDislikeFeedbackDetail(
   userId: string,
   messageId: string,
   note: string,
 ): Promise<void> {
-  const trimmedNote = note.trim()
-
-  await setDoc(
-    doc(db, `users/${userId}/conversation-dislike/${messageId}`),
-    {
-      dislikeNote: trimmedNote,
-      dislikeNoteUpdatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  )
-
-  await setDoc(
-    doc(db, 'public-feedback-dislike', messageId),
-    {
-      dislikeNote: trimmedNote,
-      dislikeNoteUpdatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  )
+  await updateFeedbackDetail(userId, messageId, 'dislike', note)
 }

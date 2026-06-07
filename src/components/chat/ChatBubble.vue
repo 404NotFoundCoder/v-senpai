@@ -52,9 +52,9 @@
           </button>
         </div>
 
-        <div v-if="hasFeedback" class="feedback-received">
+        <div v-if="hasFeedback" class="feedback-received" :class="feedbackReceivedClass">
           <span aria-hidden="true">✓</span>
-          <span>已收到你的回饋，感謝！</span>
+          <span>{{ feedbackReceivedText }}</span>
         </div>
       </div>
     </div>
@@ -100,38 +100,58 @@
     </div>
   </div>
 
-  <!-- 不滿意回饋：詢問是否前往論壇發問 -->
+  <!-- 回饋後續：滿意可補充原因，不滿意可選擇生成論壇草稿 -->
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="showDislikeFollowUp" class="dislike-followup-overlay">
+      <div v-if="showFeedbackFollowUp" class="dislike-followup-overlay">
         <div class="dislike-followup-dialog">
-          <div class="dislike-followup-header">
-            <p class="dislike-followup-eyebrow">已收到你的回饋</p>
-            <h2 class="dislike-followup-title">接下來想怎麼做？</h2>
+          <div class="dislike-followup-header" :class="feedbackToneClass">
+            <p class="dislike-followup-eyebrow">{{ feedbackFollowUpEyebrow }}</p>
+            <h2 class="dislike-followup-title">{{ feedbackFollowUpTitle }}</h2>
             <p class="dislike-followup-question">
-              要我們幫你生成草稿文章，前往論壇發問嗎？<br />或是也可以只告訴我們你的想法與建議~
+              {{ feedbackFollowUpDescription }}
             </p>
           </div>
 
           <label class="dislike-feedback-field">
-            <span>哪裡不符合期待？<small>選填</small></span>
+            <span>{{ feedbackNoteLabel }}<small>選填</small></span>
+            <div class="feedback-quick-options" :class="feedbackToneClass">
+              <button
+                v-for="option in feedbackQuickOptions"
+                :key="option"
+                type="button"
+                @click="applyFeedbackQuickOption(option)"
+              >
+                {{ option }}
+              </button>
+            </div>
             <textarea
-              v-model.trim="dislikeFeedbackText"
+              v-model.trim="feedbackNoteText"
               rows="4"
               maxlength="400"
-              placeholder="例如：沒有回答到重點、資料不相關、講得太籠統..."
+              :placeholder="feedbackNotePlaceholder"
             ></textarea>
           </label>
 
-          <div class="dislike-followup-actions">
-            <button type="button" class="btn-generate" @click="handleGenerateDraft">
+          <div
+            class="dislike-followup-actions"
+            :class="{ 'dislike-followup-actions--single': pendingFeedbackType === 'like' }"
+          >
+            <button
+              v-if="pendingFeedbackType === 'dislike'"
+              type="button"
+              class="btn-generate"
+              @click="handleGenerateDraft"
+            >
               要，幫我生成草稿
             </button>
-            <button type="button" class="btn-submit-feedback" @click="handleSubmitDislikeFeedback">
-              只送出回饋
+            <button type="button" class="btn-submit-feedback" @click="handleSubmitFeedbackNote">
+              {{ pendingFeedbackType === 'like' ? '送出回饋' : '只送出回饋' }}
             </button>
           </div>
-          <button type="button" class="btn-skip" @click="handleSkipDraft">先不用</button>
+          <button type="button" class="btn-skip" @click="handleSkipFeedbackNote">
+            {{ pendingFeedbackType === 'like' ? '不補充了' : '先不用' }}
+          </button>
         </div>
       </div>
     </Transition>
@@ -153,7 +173,7 @@
 <script setup lang="ts">
 import { useFeedback } from '@/composables/useFeedback'
 import { useToast } from '@/composables/useToast'
-import { updateDislikeFeedbackDetail } from '@/composables/services/chatFirestoreService'
+import { updateFeedbackDetail } from '@/composables/services/chatFirestoreService'
 import { DRAFT_API_URL, FORUM_ORIGIN } from '@/config/envEndpoints'
 import { formatChatTimestamp } from '@/utils/dateTime'
 import { buildForumUrl, goForum } from '@/utils/forumAuth'
@@ -235,12 +255,57 @@ const { showToast } = useToast()
 const hasFeedback = computed(
   () => feedbackGiven.value || props.feedback === 'like' || props.feedback === 'dislike',
 )
+type FeedbackType = 'like' | 'dislike'
+const effectiveFeedbackType = computed<FeedbackType | null>(() => {
+  if (props.feedback === 'like' || props.feedback === 'dislike') return props.feedback
+  return null
+})
+const localFeedbackType = ref<FeedbackType | null>(null)
+const displayedFeedbackType = computed(() => localFeedbackType.value || effectiveFeedbackType.value)
+const feedbackReceivedText = computed(() =>
+  displayedFeedbackType.value === 'like'
+    ? '已收到你的滿意回饋，謝謝！'
+    : '已收到你的不滿意回饋，謝謝你告訴我們。',
+)
+const feedbackReceivedClass = computed(() => ({
+  'feedback-received--like': displayedFeedbackType.value === 'like',
+  'feedback-received--dislike': displayedFeedbackType.value === 'dislike',
+}))
 
 const userId = getAuth().currentUser?.uid || '' // 確保已登入
 
-const showDislikeFollowUp = ref(false)
+const showFeedbackFollowUp = ref(false)
 const isDraftLoading = ref(false)
-const dislikeFeedbackText = ref('')
+const feedbackNoteText = ref('')
+const pendingFeedbackType = ref<FeedbackType | null>(null)
+const feedbackFollowUpEyebrow = computed(() =>
+  pendingFeedbackType.value === 'like' ? '滿意回饋' : '不滿意回饋',
+)
+const feedbackFollowUpTitle = computed(() =>
+  pendingFeedbackType.value === 'like' ? '想補充哪裡有幫助嗎？' : '接下來想怎麼做？',
+)
+const feedbackFollowUpDescription = computed(() =>
+  pendingFeedbackType.value === 'like'
+    ? '可以簡單告訴我們這次回答哪裡有幫助，讓我們保留好的方向。'
+    : '要我們幫你生成草稿文章，前往論壇發問嗎？或是也可以只告訴我們你的想法與建議~',
+)
+const feedbackNoteLabel = computed(() =>
+  pendingFeedbackType.value === 'like' ? '哪裡有幫助？' : '哪裡不符合期待？',
+)
+const feedbackNotePlaceholder = computed(() =>
+  pendingFeedbackType.value === 'like'
+    ? '例如：有回答到重點、資料很相關、整理得很清楚...'
+    : '例如：沒有回答到重點、資料不相關、講得太籠統...',
+)
+const feedbackToneClass = computed(() => ({
+  'feedback-tone--like': pendingFeedbackType.value === 'like',
+  'feedback-tone--dislike': pendingFeedbackType.value === 'dislike',
+}))
+const feedbackQuickOptions = computed(() =>
+  pendingFeedbackType.value === 'like'
+    ? ['回答到重點', '資料很相關', '整理得很清楚', '語氣友善', '有幫助我下一步']
+    : ['沒有回答到重點', '資料不相關', '講得太籠統', '引用資料不清楚', '有錯誤資訊'],
+)
 
 async function sendFeedback(type: 'like' | 'dislike') {
   if (!props.docid || !userId) return
@@ -252,41 +317,67 @@ async function sendFeedback(type: 'like' | 'dislike') {
     chatHistory: props.chatHistory || [],
   })
 
-  if (type === 'like') {
-    showToast('感謝你的讚！我們會持續努力！')
-    return
-  }
-
-  // 不滿意：直接顯示詢問是否前往論壇的對話框
-  showDislikeFollowUp.value = true
+  pendingFeedbackType.value = type
+  localFeedbackType.value = type
+  feedbackNoteText.value = ''
+  showFeedbackFollowUp.value = true
 }
 
-function handleSkipDraft() {
-  showDislikeFollowUp.value = false
-  dislikeFeedbackText.value = ''
+function closeFeedbackFollowUp() {
+  showFeedbackFollowUp.value = false
+  feedbackNoteText.value = ''
+  pendingFeedbackType.value = null
+}
+
+function applyFeedbackQuickOption(option: string) {
+  const current = feedbackNoteText.value.trim()
+  if (!current) {
+    feedbackNoteText.value = option
+    return
+  }
+  if (current.includes(option)) return
+  feedbackNoteText.value = `${current}、${option}`
+}
+
+function handleSkipFeedbackNote() {
+  closeFeedbackFollowUp()
   showToast('感謝你的回饋！')
 }
 
 async function handleGenerateDraft() {
-  showDislikeFollowUp.value = false
+  showFeedbackFollowUp.value = false
   isDraftLoading.value = true
   try {
+    if (props.docid && userId && pendingFeedbackType.value === 'dislike') {
+      await updateFeedbackDetail(userId, props.docid, 'dislike', feedbackNoteText.value)
+    }
     await callDraftAPI()
     // 成功會 redirect，不需手動關閉 loading
   } catch {
     showToast('生成失敗，請稍後再試')
   } finally {
     isDraftLoading.value = false
+    feedbackNoteText.value = ''
+    pendingFeedbackType.value = null
   }
 }
 
-async function handleSubmitDislikeFeedback() {
-  if (props.docid && userId) {
-    await updateDislikeFeedbackDetail(userId, props.docid, dislikeFeedbackText.value)
+async function handleSubmitFeedbackNote() {
+  const submittedType = pendingFeedbackType.value
+  if (props.docid && userId && pendingFeedbackType.value) {
+    await updateFeedbackDetail(
+      userId,
+      props.docid,
+      pendingFeedbackType.value,
+      feedbackNoteText.value,
+    )
   }
-  showDislikeFollowUp.value = false
-  dislikeFeedbackText.value = ''
-  showToast('已收到，謝謝你讓我們知道問題在哪裡')
+  closeFeedbackFollowUp()
+  showToast(
+    submittedType === 'like'
+      ? '已收到，謝謝你告訴我們哪裡有幫助'
+      : '已收到，謝謝你讓我們知道問題在哪裡',
+  )
 }
 
 // 調用 draft API
@@ -423,9 +514,14 @@ async function callDraftAPI() {
   align-items: center;
   gap: 0.4rem;
   margin-top: 0.5rem;
-  color: #2f7d50;
   font-size: 0.8125rem;
   font-weight: 700;
+}
+.feedback-received--like {
+  color: #2f7d50;
+}
+.feedback-received--dislike {
+  color: #9a5f52;
 }
 .feedback-received span:first-child {
   display: inline-grid;
@@ -437,6 +533,12 @@ async function callDraftAPI() {
   background: #61b77a;
   font-size: 0.7rem;
   line-height: 1;
+}
+.feedback-received--like span:first-child {
+  background: #61b77a;
+}
+.feedback-received--dislike span:first-child {
+  background: #b8796d;
 }
 
 /* Markdown 訊息樣式（繼承父層顏色以適應 user/AI 氣泡） */
@@ -710,6 +812,12 @@ async function callDraftAPI() {
   color: #a76f65;
   margin: 0 0 0.35rem;
 }
+.feedback-tone--like .dislike-followup-eyebrow {
+  color: #2f8d58;
+}
+.feedback-tone--dislike .dislike-followup-eyebrow {
+  color: #a76f65;
+}
 .dislike-followup-title {
   font-size: 1.25rem;
   font-weight: 900;
@@ -738,6 +846,41 @@ async function callDraftAPI() {
   color: #a9847a;
   font-size: 0.75rem;
   font-weight: 700;
+}
+.feedback-quick-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.feedback-quick-options button {
+  border: 1px solid rgba(201, 146, 136, 0.34);
+  border-radius: 999px;
+  background: #fffaf5;
+  color: #87564d;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.48rem 0.7rem;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.feedback-quick-options button:hover {
+  background: #fbecdc;
+  border-color: rgba(167, 111, 101, 0.52);
+  transform: translateY(-1px);
+}
+.feedback-quick-options.feedback-tone--like button {
+  border-color: rgba(80, 172, 111, 0.32);
+  background: #f1fbf5;
+  color: #2f7d50;
+}
+.feedback-quick-options.feedback-tone--like button:hover {
+  background: #e4f7ea;
+  border-color: rgba(47, 141, 88, 0.46);
 }
 .dislike-feedback-field textarea {
   width: 100%;
@@ -768,6 +911,9 @@ async function callDraftAPI() {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.75rem;
+}
+.dislike-followup-actions--single {
+  grid-template-columns: 1fr;
 }
 .btn-generate {
   padding: 0.72rem 1rem;

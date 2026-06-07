@@ -146,7 +146,7 @@ def upload():
         "title": "文章標題(資料來源)",
         "content": "要上傳的文本內容",
         "comment": "文章留言(可選)"
-        "sourceType": "資料類型(可選，預設 peer_sharing)"  # 例如：peer_sharing、teaching_material
+        "sourceType": "資料類型(預設 peer_sharing)"  # 例如：peer_sharing、teaching_material
     }
     """
     try:
