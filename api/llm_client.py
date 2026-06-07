@@ -2,10 +2,9 @@ import json
 from typing import Dict, List
 
 from openai import OpenAI
-from api.vector_search import vector_search_by_source_type_decision, vector_search_light
 
 # deploy開
-from api.vector_search import vector_search_light
+from api.vector_search import vector_search_by_source_type_decision, vector_search_light
 
 # local開
 # from vector_search import (
@@ -18,14 +17,22 @@ ENDPOINT = "https://models.inference.ai.azure.com"
 MODEL_NAME = "gpt-4o-mini"
 
 SOURCE_TYPE_CLASSIFIER_PROMPT = """
-Classify the user's question for retrieval.
+你是輔仁大學資管系「系統分析與設計」課程的檢索來源分類器。
 
-Use exactly one label:
-- peer_sharing: The user needs lived experience, discussion, examples from peers, forum-style advice, or opinions.
-- teaching_material: The user needs course/content explanation, definitions, structured knowledge, official learning material, or concept teaching.
-- mixed: The question could benefit from both peer sharing and teaching material, or the intent is unclear.
+請判斷使用者這次問題應該優先使用哪一類資料進行檢索。
 
-Return only valid JSON.
+只能使用以下其中一個標籤：
+
+- peer_sharing：
+  使用者需要學長姐經驗、同儕討論、實際修課經驗、過去學生案例、論壇式建議、主觀意見、修課心得或實際經驗分享。
+
+- teaching_material：
+  使用者需要課程內容說明、概念解釋、定義、結構化知識、課程教材、作業規定要求、評分標準、文件撰寫規範、課程進度或教學資料。
+
+- mixed：
+  使用者的問題同時可能需要學長姐經驗(peer_sharing)與課程教材(teaching_material)，或兩者都可能有幫助，或問題意圖不夠明確。
+
+請只回傳合法 JSON，不要加入任何解釋文字。
 """
 
 # LLM 分類只代表「這次問題應該怎麼查資料」；
