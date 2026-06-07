@@ -1,6 +1,8 @@
+import json
 from typing import Dict, List
 
 from openai import OpenAI
+from api.vector_search import vector_search_by_source_type_decision, vector_search_light
 
 # deploy開
 from api.vector_search import vector_search_light
@@ -14,6 +16,34 @@ from api.vector_search import vector_search_light
 # token = os.environ["GITHUB_TOKEN"]
 ENDPOINT = "https://models.inference.ai.azure.com"
 MODEL_NAME = "gpt-4o-mini"
+
+SOURCE_TYPE_CLASSIFIER_PROMPT = """
+Classify the user's question for retrieval.
+
+Use exactly one label:
+- peer_sharing: The user needs lived experience, discussion, examples from peers, forum-style advice, or opinions.
+- teaching_material: The user needs course/content explanation, definitions, structured knowledge, official learning material, or concept teaching.
+- mixed: The question could benefit from both peer sharing and teaching material, or the intent is unclear.
+
+Return only valid JSON.
+"""
+
+# LLM 分類只代表「這次問題應該怎麼查資料」；
+# references 裡的 sourceType 則是文件 metadata，代表該文件本身的來源種類。
+SOURCE_TYPE_CLASSIFIER_SCHEMA = {
+    "name": "source_type_classification",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "sourceType": {
+                "type": "string",
+                "enum": ["peer_sharing", "teaching_material", "mixed"],
+            }
+        },
+        "required": ["sourceType"],
+        "additionalProperties": False,
+    },
+}
 
 
 V_SENPAI_SYSTEM_PROMPT = """
@@ -228,32 +258,82 @@ def format_history_for_chat(history: List[Dict[str, str]]) -> List[Dict[str, str
     return messages
 
 
-def get_vector_search_result(user_input: str) -> dict:
+def classify_question_source_type(client: OpenAI, user_input: str) -> str:
+    """用 LLM 判斷本次問題要優先查哪種來源；失敗時保守視為 mixed。"""
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": SOURCE_TYPE_CLASSIFIER_PROMPT},
+                {"role": "user", "content": user_input},
+            ],
+            temperature=0,
+            response_format={
+                "type": "json_schema",
+                "json_schema": SOURCE_TYPE_CLASSIFIER_SCHEMA,
+            },
+        )
+        result = json.loads(response.choices[0].message.content)
+        source_type = result.get("sourceType", "mixed")
+        if source_type in {"peer_sharing", "teaching_material", "mixed"}:
+            return source_type
+    except Exception as e:
+        print("sourceType classification failed:", str(e))
+
+    return "mixed"
+
+
+def get_vector_search_result(user_input: str, token: str = None) -> dict:
     """只進行向量搜尋，不回傳 LLM 回應"""
-    search_result = vector_search_light(user_input)
+    if token:
+        client = OpenAI(base_url=ENDPOINT, api_key=token)
+        # /api/search 有 accessToken 時會先分類，再依分類結果搜尋。
+        source_type_decision = classify_question_source_type(client, user_input)
+        search_result = vector_search_by_source_type_decision(
+            user_input, source_type_decision, 3
+        )
+    else:
+        search_result = vector_search_light(user_input)
     print("🔍 向量搜尋結果:", search_result)
 
     return {
         "sources": search_result.get("sources", []),
         "ids": search_result.get("ids", []),
+        "sourceTypes": search_result.get("sourceTypes", []),
+        "sourceTypeDecision": search_result.get("sourceTypeDecision"),
+        "references": search_result.get("references", []),
         "matches": search_result.get("matches", []),
         "context_text": search_result.get("context_text", "查無資料。"),
     }
 
 
 def get_openai_response(
-    token: str, user_input: str, context_text: str = None, history=None
+    token: str,
+    user_input: str,
+    context_text: str = None,
+    history=None,
+    references=None,
+    source_types=None,
+    source_type_decision=None,
 ) -> str:
     client = OpenAI(
         base_url=ENDPOINT,
         api_key=token,
     )
-    need_ref_list = False
-    # 如果沒有提供 context_text，則重新搜尋
+    references = references or []
+    source_types = source_types or []
+    # 已有 context_text 時沿用前一步搜尋結果；沒有 context_text 時才分類並搜尋。
     if context_text is None:
-        need_ref_list = True
-        search_result = vector_search_light(user_input, 3)
+        source_type_decision = classify_question_source_type(client, user_input)
+        search_result = vector_search_by_source_type_decision(
+            user_input, source_type_decision, 3
+        )
         context_text = search_result.get("context_text", "查無資料。")
+
+        references = search_result.get("references", [])
+        source_types = search_result.get("sourceTypes", [])
+    elif not source_types and references:
+        source_types = [ref.get("sourceType", "unknown") for ref in references]
 
     messages = [
         {
@@ -279,13 +359,9 @@ def get_openai_response(
     return {
         "answer": response.choices[0].message.content,
         "context": context_text,
-        **(
-            {
-                "references": search_result.get("references", []),
-            }
-            if need_ref_list
-            else {}
-        ),
+        "references": references,
+        "sourceTypes": source_types,
+        "sourceTypeDecision": source_type_decision,
     }
 
 
@@ -315,11 +391,6 @@ def get_openai_draft_article(token: str, history: object, final_question: str) -
     return {
         "draft": response.choices[0].message.content,
     }
-
-
-import json
-
-from openai import OpenAI
 
 
 def review_forum_article(token: str, title: str, content: str) -> dict:

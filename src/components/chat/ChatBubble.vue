@@ -71,6 +71,10 @@
             <a :href="refLink(ref.id)" class="reference-link" @click.prevent="openRefPost(ref.id)">
               <span class="reference-link-emoji" aria-hidden="true">🔗</span>
               <span class="reference-link-text">{{ ref.source || '（無標題）' }}</span>
+              <span class="reference-source-type" :class="sourceTypeClass(ref.sourceType)">
+                <span class="reference-source-icon" :class="sourceTypeIconClass(ref.sourceType)" aria-hidden="true"></span>
+                <span>{{ sourceTypeLabel(ref.sourceType) }}</span>
+              </span>
             </a>
             <div class="reference-content">{{ ref.content || '（無內文）' }}</div>
           </div>
@@ -138,6 +142,7 @@ export interface ReferenceItem {
   id: string
   source: string
   content: string
+  sourceType?: 'peer_sharing' | 'teaching_material' | 'mixed' | 'unknown'
 }
 
 const props = defineProps<{
@@ -153,6 +158,22 @@ const props = defineProps<{
 
 const BASE_POST_URL = `${FORUM_ORIGIN}/post`
 const refLink = (id: string) => `${BASE_POST_URL}/${id}`
+const sourceTypeLabel = (sourceType?: ReferenceItem['sourceType']) => {
+  if (sourceType === 'peer_sharing') return '他人分享'
+  if (sourceType === 'teaching_material') return '教材'
+  if (sourceType === 'mixed') return '混合'
+  return '未分類'
+}
+const sourceTypeClass = (sourceType?: ReferenceItem['sourceType']) => ({
+  'reference-source-type--teaching': sourceType === 'teaching_material',
+  'reference-source-type--sharing': sourceType === 'peer_sharing',
+  'reference-source-type--muted': sourceType !== 'teaching_material' && sourceType !== 'peer_sharing',
+})
+const sourceTypeIconClass = (sourceType?: ReferenceItem['sourceType']) => ({
+  'reference-source-icon--book': sourceType === 'teaching_material',
+  'reference-source-icon--sparkle': sourceType === 'peer_sharing',
+  'reference-source-icon--dot': sourceType !== 'teaching_material' && sourceType !== 'peer_sharing',
+})
 
 async function openRefPost(id: string) {
   try {
@@ -170,6 +191,7 @@ const referencesList = computed(() => {
     id: item?.id ?? '',
     source: item?.source ?? '',
     content: item?.content ?? '',
+    sourceType: item?.sourceType ?? 'unknown',
   }))
 })
 
@@ -489,6 +511,7 @@ async function callDraftAPI() {
 .reference-link {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   color: #a76f65;
   font-weight: 600;
@@ -509,6 +532,62 @@ async function callDraftAPI() {
 .reference-link-text {
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s ease;
+}
+.reference-source-type {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.45rem 0.8rem;
+}
+.reference-source-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+  line-height: 1;
+}
+.reference-source-icon--book {
+  position: relative;
+  width: 0.85rem;
+  height: 0.75rem;
+  border: 1.6px solid currentColor;
+  border-radius: 0.15rem;
+}
+.reference-source-icon--book::after {
+  content: '';
+  position: absolute;
+  top: -0.05rem;
+  bottom: -0.05rem;
+  left: 50%;
+  border-left: 1.4px solid currentColor;
+}
+.reference-source-icon--sparkle::before {
+  content: '✦';
+}
+.reference-source-icon--dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.reference-source-type--teaching {
+  border: 1px solid rgba(224, 149, 42, 0.58);
+  color: #b8610e;
+  background: #fffaf0;
+}
+.reference-source-type--sharing {
+  border: 1px solid rgba(88, 176, 226, 0.5);
+  color: #1677a8;
+  background: #f0faff;
+}
+.reference-source-type--muted {
+  border: 1px solid rgba(167, 111, 101, 0.24);
+  color: #87564d;
+  background: rgba(255, 255, 255, 0.45);
 }
 .reference-link:hover .reference-link-text {
   border-bottom-color: #c79288;

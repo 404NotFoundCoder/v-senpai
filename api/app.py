@@ -33,8 +33,10 @@ def search():
     """先回傳向量搜尋結果"""
     data = request.get_json()
     user_input = data.get("message", "")
+    access_token = data.get("accessToken")
 
-    result = get_vector_search_result(user_input)
+    # 有 accessToken 時會先請 LLM 判斷問題類型，再依類型搜尋。
+    result = get_vector_search_result(user_input, token=access_token)
 
     # print("✅ 即將回傳搜尋結果：", result)
     return jsonify(result), 200
@@ -47,8 +49,19 @@ def forum_RAG():
     user_input = data.get("message", "")
     access_token = data.get("accessToken")
     context_text = data.get("context_text", None)
+    references = data.get("references", [])
+    source_types = data.get("sourceTypes", [])
+    source_type_decision = data.get("sourceTypeDecision")
 
-    result = get_openai_response(access_token, user_input, context_text=context_text)
+    # 若前端已傳 context_text，代表 /api/search 已完成分類與搜尋，這裡沿用該批資料。
+    result = get_openai_response(
+        access_token,
+        user_input,
+        context_text=context_text,
+        references=references,
+        source_types=source_types,
+        source_type_decision=source_type_decision,
+    )
 
     # print("✅ 即將回傳答案：", result)
     return jsonify(result), 200
@@ -147,6 +160,7 @@ def upload():
         title = data.get("source")
         content = data.get("content")
         comment = data.get("comment")
+        source_type = data.get("sourceType")
 
         if not all([id, title, content]):
             return (
@@ -160,7 +174,7 @@ def upload():
             )
 
         # 調用上傳函數
-        upload_to_pinecone(id, title, content, comment=comment)
+        upload_to_pinecone(id, title, content, comment=comment, source_type=source_type)
 
         return (
             jsonify(
