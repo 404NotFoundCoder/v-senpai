@@ -10,6 +10,7 @@
       :metadata="msg.metadata"
       :references="msg.references"
       :docid="msg.docid"
+      :feedback="msg.feedback"
       :user-text="msg.userText"
       :chat-history="msg.chatHistory"
     />

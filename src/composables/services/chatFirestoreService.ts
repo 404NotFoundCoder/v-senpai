@@ -131,6 +131,16 @@ export async function updateMessageFeedback(
     feedbackAt: serverTimestamp(),
   })
 
+  // 同步標註原本的對話文件，重新載入聊天紀錄時就能隱藏回饋按鈕。
+  await setDoc(
+    doc(db, `users/${userId}/conversation-0610/${messageId}`),
+    {
+      feedback: type,
+      feedbackAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
+
   // 2. 從 Firestore 讀取完整對話資訊並保存到公共 collection
   try {
     if (context?.userText && context?.aiText) {
@@ -202,4 +212,41 @@ export async function updateMessageFeedback(
     console.error('❌ 保存回饋到公共 collection 失敗:', error)
     // 不拋出錯誤，因為使用者自己的回饋已經保存成功
   }
+}
+
+export async function updateFeedbackDetail(
+  userId: string,
+  messageId: string,
+  type: 'like' | 'dislike',
+  note: string,
+): Promise<void> {
+  const trimmedNote = note.trim()
+  const noteField = type === 'like' ? 'likeNote' : 'dislikeNote'
+  const updatedAtField = type === 'like' ? 'likeNoteUpdatedAt' : 'dislikeNoteUpdatedAt'
+
+  await setDoc(
+    doc(db, `users/${userId}/conversation-${type}/${messageId}`),
+    {
+      [noteField]: trimmedNote,
+      [updatedAtField]: serverTimestamp(),
+    },
+    { merge: true },
+  )
+
+  await setDoc(
+    doc(db, `public-feedback-${type}`, messageId),
+    {
+      [noteField]: trimmedNote,
+      [updatedAtField]: serverTimestamp(),
+    },
+    { merge: true },
+  )
+}
+
+export async function updateDislikeFeedbackDetail(
+  userId: string,
+  messageId: string,
+  note: string,
+): Promise<void> {
+  await updateFeedbackDetail(userId, messageId, 'dislike', note)
 }

@@ -3,6 +3,7 @@ export interface Reference {
   id: string
   source: string
   content: string
+  sourceType?: 'peer_sharing' | 'teaching_material' | 'mixed' | 'unknown'
 }
 
 export interface ChatMessage {
