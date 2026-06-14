@@ -237,6 +237,7 @@ def get_vector_search_result(user_input: str) -> dict:
         "sources": search_result.get("sources", []),
         "ids": search_result.get("ids", []),
         "matches": search_result.get("matches", []),
+        "references": search_result.get("references", []),
         "context_text": search_result.get("context_text", "查無資料。"),
     }
 

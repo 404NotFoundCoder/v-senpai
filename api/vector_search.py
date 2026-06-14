@@ -66,6 +66,7 @@ def vector_search_light(user_input: str, top_k: int = 50) -> dict:
                 "id": match.get("id"),
                 "source": metadata.get("source"),
                 "content": metadata.get("content"),
+                "sourceType": metadata.get("sourceType", "unknown"),
             }
             if metadata.get("comment"):
                 reference["comment"] = metadata.get("comment")

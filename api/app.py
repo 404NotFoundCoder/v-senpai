@@ -147,6 +147,9 @@ def upload():
         title = data.get("source")
         content = data.get("content")
         comment = data.get("comment")
+        source_type = data.get("sourceType")
+        if source_type not in {"peer_sharing", "teaching_material"}:
+            source_type = "peer_sharing"
 
         if not all([id, title, content]):
             return (
@@ -160,11 +163,17 @@ def upload():
             )
 
         # 調用上傳函數
-        upload_to_pinecone(id, title, content, comment=comment)
+        upload_to_pinecone(id, title, content, comment=comment, source_type=source_type)
 
         return (
             jsonify(
-                {"message": "上傳成功", "id": id, "title": title, "comment": comment}
+                {
+                    "message": "上傳成功",
+                    "id": id,
+                    "title": title,
+                    "comment": comment,
+                    "sourceType": source_type,
+                }
             ),
             200,
         )
@@ -232,10 +241,6 @@ def verify():
 
     except auth.InvalidIdTokenError:
         return jsonify({"error": "無效的 ID Token"}), 401
-    except auth.ExpiredIdTokenError:
-        return jsonify({"error": "ID Token 已過期"}), 401
-    except auth.RevokedIdTokenError:
-        return jsonify({"error": "ID Token 已被撤銷"}), 401
     except ValueError as e:
         return jsonify({"error": str(e)}), 401
     except Exception as e:

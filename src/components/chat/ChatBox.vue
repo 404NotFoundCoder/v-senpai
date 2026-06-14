@@ -34,7 +34,12 @@ defineProps<{
     text: string
     createdAt: string
     metadata?: string
-    references?: { id: string; source: string; content: string }[]
+    references?: {
+      id: string
+      source: string
+      content: string
+      sourceType?: 'peer_sharing' | 'teaching_material' | 'mixed' | 'unknown'
+    }[]
     docid?: string
     feedback?: string
     userText?: string
