@@ -12,7 +12,7 @@ load_dotenv()
 # content = 根據interviewee的經驗，answer 內文
 
 
-def upload_to_pinecone(id, title, content, comment=None):
+def upload_to_pinecone(id, title, content, comment=None, source_type=None):
     pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
     if not pinecone_api_key:
@@ -40,6 +40,11 @@ def upload_to_pinecone(id, title, content, comment=None):
     if comment is not None and str(comment).strip() == "":
         comment = None
 
+    # sourceType 會寫進 Pinecone metadata，後續搜尋會用它篩選文件種類。
+    # 舊呼叫端若尚未傳 sourceType，先用 peer_sharing 維持既有上傳流程可用。
+    if source_type not in {"peer_sharing", "teaching_material"}:
+        source_type = "peer_sharing"
+
     embed_text = (
         f"標題:{title}\n內文:{content}\n{comment}"
         if comment
@@ -56,6 +61,8 @@ def upload_to_pinecone(id, title, content, comment=None):
             "metadata": {
                 "source": title,
                 "content": content,
+                # 這是文件自己的類型，不是使用者問題的 LLM 分類結果。
+                "sourceType": source_type,
                 **({"comment": comment} if comment else {}),
             },
         }
